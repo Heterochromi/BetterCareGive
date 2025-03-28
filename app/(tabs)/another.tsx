@@ -8,11 +8,8 @@ import { api } from "@/convex/_generated/api";
 import { useQuery } from "convex/react";
 import { Link } from 'expo-router';
 import { View } from 'react-native';
-import React from 'react';
-
-export default function HomeScreen() {
+export default function Another() {
   const tasks = useQuery(api.tasks.get);
-  const [text, setText] = React.useState('stuff');
 
   return (
     <ParallaxScrollView
@@ -23,14 +20,12 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }>
-      {/* <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">ST</ThemedText>
+      <ThemedView style={styles.titleContainer}>
+        {/* <ThemedText type="title">another da screen!</ThemedText> */}
         <HelloWave />
       </ThemedView>
       {tasks?.map(({ _id, text }) => <ThemedText key={_id}>{text}</ThemedText>)}
-      <TextInput style={{color:"white"}} value={text} onChange={(e) => {
-        setText(e.target.value);
-      }}></TextInput> */}
+      <TextInput> hello</TextInput>
       
     </ParallaxScrollView>
   );

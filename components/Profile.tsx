@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
   },
   txt:{
     fontSize: 18,
-    color: 'white',
     fontWeight: 'bold',
   },
   modalOverlay: {

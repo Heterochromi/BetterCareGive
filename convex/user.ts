@@ -332,3 +332,51 @@ export const rejectCaregiverRequest = mutation({
     return { success: true };
   },
 });
+
+/**
+ * Get all caregivers for the current patient
+ */
+export const getPatientCaregivers = query({
+  args: {},
+  handler: async (ctx) => {
+    // Get the patient's identity
+    const patientId = await getAuthUserId(ctx);
+    if (!patientId) {
+      throw new Error("Not authenticated");
+    }
+
+    // Get the patient from the users table
+    const patient = await ctx.db.get(patientId);
+    if (!patient || patient.role !== "patient") {
+      throw new Error("User is not a patient");
+    }
+
+    // Find the patient-to-caregiver relationship
+    const patientRelation = await ctx.db
+      .query("patientToCareGiver")
+      .filter((q) => q.eq(q.field("patient_id"), patientId.toString()))
+      .first();
+
+    if (!patientRelation || !patientRelation.care_givers || patientRelation.care_givers.length === 0) {
+      return [];
+    }
+
+    // Get caregiver details for each caregiver ID
+    const caregiverDetails = await Promise.all(
+      patientRelation.care_givers.map(async (caregiverId) => {
+        const caregiver = await ctx.db.get(caregiverId);
+        if (!caregiver) return null;
+        
+        return {
+          id: caregiver._id,
+          name: caregiver.name || "Unknown Caregiver",
+          email: caregiver.email,
+          image: caregiver.image,
+        };
+      })
+    );
+
+    // Filter out any null values and return the caregivers
+    return caregiverDetails.filter(Boolean);
+  },
+});

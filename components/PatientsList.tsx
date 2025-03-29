@@ -90,7 +90,6 @@ const styles = StyleSheet.create({
     padding: 12,
     marginBottom: 12,
     borderRadius: 10,
-    backgroundColor: '#F8F8F8',
     borderWidth: 1,
     borderColor: '#E0E0E0',
   },
@@ -110,7 +109,6 @@ const styles = StyleSheet.create({
   },
   patientEmail: {
     fontSize: 14,
-    color: '#666',
   },
   emptyContainer: {
     padding: 20,

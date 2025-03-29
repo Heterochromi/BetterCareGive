@@ -14,6 +14,7 @@ import { UserProfileCard } from "@/components/UserProfileCard";
 import { AddPatientForm } from "@/components/AddPatientForm";
 import { PatientsList } from "@/components/PatientsList";
 import { CareRequestsList } from "@/components/CareRequestsList";
+import { CaregiverList } from '@/components/CaregiverList';
 
 export default function Profile() {
   const [userType, setUserType] = useState<"caregiver" | "patient" | null>(
@@ -100,16 +101,22 @@ export default function Profile() {
           email={profile.email}
         />
         
-        <ThemedText style={styles.dashboardTitle}>Patient Dashboard</ThemedText>
-        
+        {/* CaregiverList component to display patient's caregivers */}
+        <CaregiverList 
+          onCaregiverSelect={(caregiver) => {
+            // Handle caregiver selection (future functionality)
+            console.log('Selected caregiver:', caregiver);
+          }}
+        />
+                
         {/* CareRequestsList contains a FlatList which is a virtualized list */}
         <CareRequestsList />
         
-        <ThemedView style={styles.infoBox}>
+        {/* <ThemedView style={styles.infoBox}>
           <ThemedText style={styles.infoText}>
             Accept requests from caregivers to allow them to help manage your care
           </ThemedText>
-        </ThemedView>
+        </ThemedView> */}
         
       </ThemedView>
     );
@@ -128,7 +135,6 @@ export default function Profile() {
         
         <AddPatientForm 
           onSuccess={() => {
-            // This will refresh the patients list
           }}
         />
         

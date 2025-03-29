@@ -15,6 +15,7 @@ import { ConvexReactClient } from "convex/react";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { useConvexAuth } from "convex/react";
+import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
@@ -65,17 +66,11 @@ export default function RootLayout() {
 function RootLayoutNav() {
   const { isLoading, isAuthenticated } = useConvexAuth();
 
-
-
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {isAuthenticated && <Stack.Screen name="(tabs)" />}
-
-      {/* Content only shown to unauthenticated users */}
-      { !isAuthenticated &&
-        <>
+        <Stack.Screen name="(tabs)" />
         <Stack.Screen name="sign-in" />
-        <Stack.Screen name="sign-up" /></>}
     </Stack>
   );
 }
+

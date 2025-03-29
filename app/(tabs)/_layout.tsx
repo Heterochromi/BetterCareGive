@@ -16,7 +16,7 @@ export default function TabLayout() {
 
   const colorScheme = useColorScheme();
 
-  if (!isAuthenticated) {
+  if (!isLoading &&!isAuthenticated) {
     return <Redirect href="/sign-in" />;
   }
 

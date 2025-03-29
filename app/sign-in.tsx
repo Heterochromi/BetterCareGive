@@ -4,9 +4,17 @@ import { openAuthSessionAsync } from "expo-web-browser";
 import { makeRedirectUri } from "expo-auth-session";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { GoogleLogo } from '@/assets/svgs/svgs';
+import { Redirect } from 'expo-router';
+import { useConvexAuth } from "convex/react";
+
 const redirectTo = makeRedirectUri();
 
 function SignIn() {
+    const { isLoading, isAuthenticated } = useConvexAuth();
+  
+      if (isAuthenticated) {
+        return <Redirect href="/(tabs)" />;
+      }
   const { signIn } = useAuthActions();
   const handleSignIn = async () => {
     const { redirect } = await signIn("google", { redirectTo });
@@ -18,6 +26,7 @@ function SignIn() {
       const { url } = result;
       const code = new URL(url).searchParams.get("code")!;
       await signIn("google", { code });
+      // Navigate to the tabs screen after successful sign-in
     }
   };
   return (
@@ -25,6 +34,7 @@ function SignIn() {
       <View style={styles.buttonContent}>
         <GoogleLogo width={30} height={30}/>
         <Text style={styles.buttonText}>Continue with Google</Text>
+        <View></View>
       </View>
     </TouchableOpacity>
   );
@@ -59,16 +69,11 @@ const styles = StyleSheet.create({
   buttonContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  googleIcon: {
-    width: 18,
-    height: 18,
-    marginRight: 8,
+    justifyContent: 'space-between',
   },
   buttonText: {
     color: '#3c4043',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '500',
   }
 });

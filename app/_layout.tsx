@@ -14,19 +14,17 @@ import { ConvexAuthProvider } from "@convex-dev/auth/react";
 import { ConvexReactClient } from "convex/react";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
-import { View } from "react-native";
+import { useConvexAuth } from "convex/react";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
- 
+
 const secureStorage = {
   getItem: SecureStore.getItemAsync,
   setItem: SecureStore.setItemAsync,
   removeItem: SecureStore.deleteItemAsync,
 };
- 
-
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -48,33 +46,36 @@ export default function RootLayout() {
   }
 
   return (
-      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <ConvexAuthProvider
-           storage={
-            Platform.OS === "android" || Platform.OS === "ios"
-              ? secureStorage
-              : undefined
-          }
-        client={convex}>
-          <RootLayoutNav />
-          <StatusBar style="auto" />
-        </ConvexAuthProvider>
-      </ThemeProvider>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+      <ConvexAuthProvider
+        storage={
+          Platform.OS === "android" || Platform.OS === "ios"
+            ? secureStorage
+            : undefined
+        }
+        client={convex}
+      >
+        <RootLayoutNav />
+        <StatusBar style="auto" />
+      </ConvexAuthProvider>
+    </ThemeProvider>
   );
 }
 
 function RootLayoutNav() {
+  const { isLoading, isAuthenticated } = useConvexAuth();
+
+
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {true ? (
+      {isAuthenticated && <Stack.Screen name="(tabs)" />}
+
+      {/* Content only shown to unauthenticated users */}
+      { !isAuthenticated &&
         <>
-          <Stack.Screen name="sign-in" />
-          <Stack.Screen name="sign-up" />
-        </>
-      ) : (
-        <Stack.Screen name="(tabs)" />
-      )}
+        <Stack.Screen name="sign-in" />
+        <Stack.Screen name="sign-up" /></>}
     </Stack>
   );
 }

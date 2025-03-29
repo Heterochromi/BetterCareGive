@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { View, Image, StyleSheet, TouchableOpacity, Dimensions, Modal, Pressable } from 'react-native';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { Collapsible } from './Collapsible';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
+import Separator from './Seperator';
+import { useAuthActions } from "@convex-dev/auth/react";
 
 export const Profile = () => {
   const profile = useQuery(api.user.getCurrentUser);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  
+  const { signOut } = useAuthActions();
+
   // Calculate size based on screen width (5% of screen width)
   const screenWidth = Dimensions.get('window').width;
   const size = screenWidth * 0.12;
@@ -49,8 +51,11 @@ export const Profile = () => {
             onPress={(e) => e.stopPropagation()}
           >
             <ThemedView style={styles.dropdown}>
-              <ThemedText>Profile Settings</ThemedText>
-              <ThemedText>Logout</ThemedText>
+              <ThemedText style={styles.txt}>Profile Settings</ThemedText>
+              <Separator/>
+              <TouchableOpacity onPress={() => signOut()}>
+              <ThemedText style={styles.txt}>Logout</ThemedText>
+              </TouchableOpacity>
             </ThemedView>
           </Pressable>
         </Pressable>
@@ -71,6 +76,11 @@ const styles = StyleSheet.create({
   },
   image: {
     alignSelf: 'center',
+  },
+  txt:{
+    fontSize: 18,
+    color: 'white',
+    fontWeight: 'bold',
   },
   modalOverlay: {
     flex: 1,

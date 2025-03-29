@@ -9,7 +9,7 @@ import { useQuery } from "convex/react";
 import { Link } from 'expo-router';
 import { View } from 'react-native';
 export default function Another() {
-  const tasks = useQuery(api.tasks.get);
+//   const tasks = useQuery(api.tasks.get);
 
   return (
     <ParallaxScrollView
@@ -24,7 +24,7 @@ export default function Another() {
         {/* <ThemedText type="title">another da screen!</ThemedText> */}
         <HelloWave />
       </ThemedView>
-      {tasks?.map(({ _id, text }) => <ThemedText key={_id}>{text}</ThemedText>)}
+      {/* {tasks?.map(({ _id, text }) => <ThemedText key={_id}>{text}</ThemedText>)} */}
       <TextInput> hello</TextInput>
       
     </ParallaxScrollView>

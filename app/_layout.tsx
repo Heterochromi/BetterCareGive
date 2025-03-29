@@ -9,14 +9,24 @@ import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
-import { ConvexReactClient } from "convex/react";
 import { useColorScheme } from "@/hooks/useColorScheme";
-import { ClerkProvider, useAuth } from "@clerk/clerk-react";
-import { ConvexProviderWithClerk } from "convex/react-clerk";
+import { ConvexAuthProvider } from "@convex-dev/auth/react";
+import { ConvexReactClient } from "convex/react";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
+import { View } from "react-native";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,
 });
+ 
+const secureStorage = {
+  getItem: SecureStore.getItemAsync,
+  setItem: SecureStore.setItemAsync,
+  removeItem: SecureStore.deleteItemAsync,
+};
+ 
+
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
@@ -38,34 +48,26 @@ export default function RootLayout() {
   }
 
   return (
-    <ClerkProvider publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY!}>
       <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-        <ConvexProviderWithClerk client={convex} useAuth={useAuth}>
+        <ConvexAuthProvider
+           storage={
+            Platform.OS === "android" || Platform.OS === "ios"
+              ? secureStorage
+              : undefined
+          }
+        client={convex}>
           <RootLayoutNav />
           <StatusBar style="auto" />
-        </ConvexProviderWithClerk>
+        </ConvexAuthProvider>
       </ThemeProvider>
-    </ClerkProvider>
   );
 }
 
 function RootLayoutNav() {
-  const { isSignedIn, isLoaded } = useAuth();
-
-  // Wait for auth to load before deciding navigation
-  useEffect(() => {
-    if (!isLoaded) return;
-    
-    if (!isSignedIn) {
-      router.replace('/sign-in');
-    } else {
-      router.replace('/(tabs)');
-    }
-  }, [isLoaded, isSignedIn]);
 
   return (
     <Stack screenOptions={{ headerShown: false }}>
-      {!isSignedIn ? (
+      {true ? (
         <>
           <Stack.Screen name="sign-in" />
           <Stack.Screen name="sign-up" />

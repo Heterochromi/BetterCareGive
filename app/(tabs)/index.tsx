@@ -11,7 +11,7 @@ import { View } from 'react-native';
 import React from 'react';
 
 export default function HomeScreen() {
-  const tasks = useQuery(api.tasks.get);
+  // const tasks = useQuery(api.tasks.get);
   const [text, setText] = React.useState('stuff');
 
   return (

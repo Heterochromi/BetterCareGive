@@ -8,17 +8,26 @@ import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
 import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { useAuth } from '@clerk/clerk-react';
-
+import { useConvexAuth } from "convex/react";
+import { View , Text } from 'react-native';
+import {Profile} from '@/components/Profile';
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const { isSignedIn } = useAuth();
+  const { isLoading, isAuthenticated  } = useConvexAuth();
 
-  if (!isSignedIn) {
+  const colorScheme = useColorScheme();
+
+  if (!isAuthenticated) {
     return <Redirect href="/sign-in" />;
   }
 
   return (
+  <>
+  <View style={{
+    position: 'absolute',
+    top: 30,
+    right: 20,
+    zIndex: 100,
+  }}><Profile/></View>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -55,13 +64,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
         }}
       />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="person.fill" color={color} />,
-        }}
-      />
     </Tabs>
+  </>
   );
 }

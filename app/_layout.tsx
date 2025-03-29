@@ -15,7 +15,6 @@ import { ConvexReactClient } from "convex/react";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { useConvexAuth } from "convex/react";
-import { Authenticated, Unauthenticated, AuthLoading } from "convex/react";
 
 const convex = new ConvexReactClient(process.env.EXPO_PUBLIC_CONVEX_URL!, {
   unsavedChangesWarning: false,

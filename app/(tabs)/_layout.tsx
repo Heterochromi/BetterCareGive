@@ -22,12 +22,6 @@ export default function TabLayout() {
 
   return (
   <>
-  <View style={{
-    position: 'absolute',
-    top: 30,
-    right: 20,
-    zIndex: 100,
-  }}><Profile/></View>
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
@@ -51,17 +45,10 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="profile"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="another"
-        options={{
-          title: 'stuff',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Profile',
+          tabBarIcon: () => <><Profile/></>,
         }}
       />
     </Tabs>

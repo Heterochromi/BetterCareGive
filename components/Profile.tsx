@@ -14,11 +14,11 @@ export const Profile = () => {
 
   // Calculate size based on screen width (5% of screen width)
   const screenWidth = Dimensions.get('window').width;
-  const size = screenWidth * 0.12;
+  const size = screenWidth * 0.07;
 
   return (
     <View style={styles.wrapper}>
-      <TouchableOpacity onPress={() => setIsDropdownOpen(!isDropdownOpen)}>
+      {/* <TouchableOpacity onPress={() => setIsDropdownOpen(!isDropdownOpen)}> */}
         <View style={[styles.container, { 
           width: size, 
           height: size, 
@@ -34,7 +34,7 @@ export const Profile = () => {
             resizeMode="cover"
           />
         </View>
-      </TouchableOpacity>
+      {/* </TouchableOpacity> */}
       
       <Modal
         visible={isDropdownOpen}
@@ -66,7 +66,7 @@ export const Profile = () => {
 
 const styles = StyleSheet.create({
   wrapper: {
-    position: 'relative',
+    // position: 'relative',
   },
   container: {
     overflow: 'hidden',

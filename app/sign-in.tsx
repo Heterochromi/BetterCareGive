@@ -12,7 +12,7 @@ const redirectTo = makeRedirectUri();
 function SignIn() {
     const { isLoading, isAuthenticated } = useConvexAuth();
   
-      if (!isAuthenticated) {
+      if (isAuthenticated) {
         return <Redirect href="/(tabs)" />;
       }
   const { signIn } = useAuthActions();

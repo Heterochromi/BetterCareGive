@@ -5,6 +5,7 @@ import { Picker } from '@react-native-picker/picker';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Doc, Id } from "../convex/_generated/dataModel";
+import DatePicker from 'react-native-date-picker'
 
 // Define interface to match Convex document structure including new fields
 // Assuming the schema uses Id<'users'> for patient/caregiver IDs
@@ -47,9 +48,8 @@ export const Calendar = () => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
   const [eventDescription, setEventDescription] = useState('');
-  const [eventHour, setEventHour] = useState('09'); // Hour 1-12
-  const [eventMinute, setEventMinute] = useState('00');
-  const [eventAmPm, setEventAmPm] = useState('AM'); // Add AM/PM state
+  const [selectedEventTime, setSelectedEventTime] = useState(new Date());
+  const [isTimePickerVisible, setTimePickerVisible] = useState(false);
   const [isRepeat, setIsRepeat] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
 
@@ -112,9 +112,9 @@ export const Calendar = () => {
     }
     setEventTitle('');
     setEventDescription('');
-    setEventHour('09'); // Reset to default 12-hour
-    setEventMinute('00');
-    setEventAmPm('AM'); // Reset AM/PM
+    const defaultTime = new Date();
+    defaultTime.setHours(9, 0, 0, 0);
+    setSelectedEventTime(defaultTime);
     setIsRepeat(false);
     setRepeatInterval(null);
     setModalVisible(true);
@@ -125,8 +125,8 @@ export const Calendar = () => {
       alert("User data not loaded or user not authenticated.");
       return;
     }
-    if (!eventTitle || !selectedDate || !eventHour || !eventMinute) {
-      alert('Please fill in Title, Date, and select a Time.');
+    if (!eventTitle || !selectedDate) {
+      alert('Please fill in Title and Date.');
       return;
     }
     if (isRepeat && !repeatInterval) {
@@ -134,21 +134,13 @@ export const Calendar = () => {
       return;
     }
 
-    // Convert 12-hour format to 24-hour format for timestamp calculation
-    let hours24 = parseInt(eventHour, 10);
-    if (eventAmPm === 'PM' && hours24 !== 12) {
-      hours24 += 12;
-    } else if (eventAmPm === 'AM' && hours24 === 12) { // Handle 12 AM (midnight)
-      hours24 = 0;
-    }
-    const minutes = parseInt(eventMinute, 10);
+    const hours = selectedEventTime.getHours();
+    const minutes = selectedEventTime.getMinutes();
 
-    // Combine date and calculated 24-hour time into a timestamp
     const combinedDateTime = new Date(selectedDate + 'T00:00:00');
-    combinedDateTime.setHours(hours24, minutes); // Use 24-hour format
+    combinedDateTime.setHours(hours, minutes);
     const eventTimestamp = combinedDateTime.getTime();
 
-    // --- Get User Data Logic (remains the same) ---
     const currentUserId = currentUser.id;
     const currentUserName = currentUser.name || "Unknown User";
     const currentUserRole = currentUser.role;
@@ -166,11 +158,9 @@ export const Calendar = () => {
     if (currentUserRole === 'patient') {
       patientData = { id: currentUserId, patient_name: currentUserName };
     } else if (currentUserRole === 'caregiver') {
-      // <<< --- REPLACE PLACEHOLDER PATIENT LOGIC HERE --- >>>
       console.warn("Caregiver creating event - Using caregiver details as placeholder patient. Implement patient selection.");
-      const selectedPatientId = currentUserId; // <<< TEMPORARY
-      const selectedPatientName = "Selected Patient Name"; // <<< TEMPORARY
-      // <<< --------------------------------------------- >>>
+      const selectedPatientId = currentUserId;
+      const selectedPatientName = "Selected Patient Name";
       patientData = { id: selectedPatientId, patient_name: selectedPatientName };
       caregiverData = { id: currentUserId, patient_name: currentUserName };
       eventIsSetByCaregiver = true;
@@ -179,7 +169,6 @@ export const Calendar = () => {
       alert("Error: Invalid user role.");
       return;
     }
-    // --- End User Data Logic ---
 
     try {
       await createEvent({
@@ -193,12 +182,11 @@ export const Calendar = () => {
         repeat: isRepeat ? repeatInterval ?? undefined : undefined,
       });
 
-      // Reset form and close modal
       setEventTitle('');
       setEventDescription('');
-      setEventHour('09'); // Reset hour
-      setEventMinute('00'); // Reset minute
-      setEventAmPm('AM'); // Reset AM/PM
+      const defaultTime = new Date();
+      defaultTime.setHours(9, 0, 0, 0);
+      setSelectedEventTime(defaultTime);
       setIsRepeat(false);
       setRepeatInterval(null);
       setModalVisible(false);
@@ -209,12 +197,11 @@ export const Calendar = () => {
     }
   };
 
-  // Format time from timestamp for display
-  const formatTime = (timestamp: number) => {
-    return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: false });
+  const formatTime = (dateOrTimestamp: number | Date) => {
+    const date = typeof dateOrTimestamp === 'number' ? new Date(dateOrTimestamp) : dateOrTimestamp;
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
-  // Render an event item using the dateTime field
   const renderEventItem = ({ item }: { item: ConvexEvent }) => (
     <View style={styles.eventItem}>
       <Text style={styles.eventTitle}>{item.title} ({formatTime(item.dateTime)})</Text>
@@ -285,51 +272,40 @@ export const Calendar = () => {
         onRequestClose={() => setModalVisible(false)}
       >
         <ScrollView contentContainerStyle={styles.modalOuterContainer}>
+
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Create Event</Text>
             <Text style={styles.dateText}>Date: {selectedDate}</Text>
-            
+
             <TextInput
               style={styles.input}
               placeholder="Event Title"
               value={eventTitle}
               onChangeText={setEventTitle}
             />
-            
-            <View style={styles.timePickerContainer}>
-              <Picker
-                selectedValue={eventHour}
-                style={styles.pickerHourMinute} // Use adjusted style
-                onValueChange={(itemValue) => setEventHour(itemValue)}
-              >
-                {/* Hours 1-12 */}
-                {Array.from({ length: 12 }, (_, i) => {
-                  const hour = (i + 1).toString().padStart(2, '0');
-                  return <Picker.Item key={hour} label={hour} value={hour} />;
-                })}
-              </Picker>
-              <Text style={styles.timeSeparator}>:</Text>
-              <Picker
-                selectedValue={eventMinute}
-                style={styles.pickerHourMinute} // Use adjusted style
-                onValueChange={(itemValue) => setEventMinute(itemValue)}
-              >
-                {Array.from({ length: 60 }, (_, i) => {
-                  const minute = i.toString().padStart(2, '0');
-                  return <Picker.Item key={minute} label={minute} value={minute} />;
-                })}
-              </Picker>
-              {/* Add AM/PM Picker */}
-              <Picker
-                selectedValue={eventAmPm}
-                style={styles.pickerAmPm} // Use specific style for AM/PM
-                onValueChange={(itemValue) => setEventAmPm(itemValue)}
-              >
-                
-                <Picker.Item key="AM" label="AM" value="AM" />
-                <Picker.Item key="PM" label="PM" value="PM" />
-              </Picker>
-            </View>
+
+            <TouchableOpacity
+              style={styles.timeInputButton}
+              onPress={() => setTimePickerVisible(true)}
+            >
+              <Text style={styles.timeInputText}>
+                Time: {formatTime(selectedEventTime)}
+              </Text>
+            </TouchableOpacity>
+
+            <DatePicker
+              modal
+              open={isTimePickerVisible}
+              date={selectedEventTime}
+              mode="time"
+              onConfirm={(date) => {
+                setTimePickerVisible(false);
+                setSelectedEventTime(date);
+              }}
+              onCancel={() => {
+                setTimePickerVisible(false);
+              }}
+            />
 
             <TextInput
               style={[styles.input, styles.textArea]}
@@ -384,7 +360,7 @@ export const Calendar = () => {
               >
                 <Text style={styles.buttonText}>Cancel</Text>
               </TouchableOpacity>
-              
+
               <TouchableOpacity
                 style={[styles.button, styles.createButton]}
                 onPress={handleCreateEvent}
@@ -479,6 +455,7 @@ const styles = StyleSheet.create({
     padding: 20,
     width: '90%',
     alignItems: 'center',
+    maxHeight: '85%',
   },
   modalTitle: {
     fontSize: 24,
@@ -496,6 +473,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 15,
+    fontSize: 16,
   },
   textArea: {
     height: 100,
@@ -505,6 +483,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '100%',
+    marginTop: 10,
   },
   button: {
     padding: 15,
@@ -527,6 +506,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingVertical: 20,
   },
   repeatSection: {
     flexDirection: 'row',
@@ -537,6 +517,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   repeatLabel: {
+    fontSize: 16,
   },
   intervalSection: {
     width: '100%',
@@ -572,24 +553,18 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
   },
-  timePickerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  timeInputButton: {
     width: '100%',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 10,
+    padding: 15,
     marginBottom: 15,
+    alignItems: 'flex-start',
+    backgroundColor: '#f9f9f9'
   },
-  pickerHourMinute: { // Style for Hour and Minute pickers
-    width: Platform.OS === 'ios' ? 80 : 100, // Restore fixed width
-    height: Platform.OS === 'ios' ? 150 : 50,
-  },
-  pickerAmPm: { // Style for AM/PM picker
-    width: Platform.OS === 'ios' ? 90 : 110, // Restore fixed width, slightly increased for AM/PM
-    height: Platform.OS === 'ios' ? 150 : 50,
-  },
-  timeSeparator: {
-    fontSize: 20,
-    marginHorizontal: 5,
-    fontWeight: 'bold',
+  timeInputText: {
+    fontSize: 16,
+    color: '#333'
   },
 }); 

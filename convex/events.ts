@@ -45,7 +45,7 @@ export const create = mutation({
       description: args.description,
       dateTime: args.dateTime,
       patient: args.patient,
-      isSetByCareGiver: args.isSetByCareGiver,
+      isSetByCareGiver: args.isSetByCareGiver ?? false,
       careGiver: args.careGiver,
       userId: userId,
       isRepeat: args.isRepeat,

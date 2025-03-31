@@ -56,50 +56,197 @@ export const Calendar = () => {
   const currentUser = useQuery(api.user.getCurrentUser);
   const createEvent = useMutation(api.events.create);
 
-  // Fetch *all* events once for marking the calendar
-  const allEvents = useQuery(api.events.list) || [];
+  // Fetch *all* events once for marking the calendar and calculating selected day events
+  const allEvents = useQuery(api.events.list) || []; // Use this for both markedDates and eventsForSelectedDate
 
-  // Calculate start and end timestamps for the selected day
-  const { startOfDay, endOfDay } = useMemo(() => {
-    if (!selectedDate) return { startOfDay: null, endOfDay: null };
-    const dateObj = new Date(selectedDate + 'T00:00:00'); // Ensure local timezone is considered
-    const start = dateObj.setHours(0, 0, 0, 0);
-    const end = start + 24 * 60 * 60 * 1000;
-    return { startOfDay: start, endOfDay: end };
-  }, [selectedDate]);
-
-  // Fetch events for the selected date range
-  // Use skip argument to prevent query when no date is selected
-  const selectedDateEvents = useQuery(
-    api.events.getByDateRange,
-    selectedDate ? { startOfDay: startOfDay!, endOfDay: endOfDay! } : 'skip'
-  ) || [];
-
-  // Transform all events into calendar marking format
+  // Transform all events into calendar marking format, including repeats
   const markedDates: MarkedDates = useMemo(() => {
-    const marks = allEvents.reduce((acc: MarkedDates, event: ConvexEvent) => {
-      if (event.dateTime) {
-        const dateString = new Date(event.dateTime).toISOString().split('T')[0];
-        acc[dateString] = {
-          marked: true,
-          dotColor: '#50cebb',
-        };
-      }
-      return acc;
-    }, {});
+    const marks: MarkedDates = {};
+    const today = new Date();
+    const endDateLimit = new Date(today);
+    endDateLimit.setFullYear(today.getFullYear() + 1); // Calculate repeats up to 1 year ahead
 
-    // Add selection styling explicitly for the selectedDate
+    allEvents.forEach((event: ConvexEvent) => {
+      if (!event.dateTime) return;
+
+      let currentDate = new Date(event.dateTime);
+      // Normalize to UTC start of day for consistent date string generation
+      const originalDateString = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()))
+                                  .toISOString().split('T')[0];
+
+
+      // Mark the original date
+      marks[originalDateString] = {
+        marked: true,
+        dotColor: '#50cebb',
+      };
+
+      // Handle repeating events
+      if (event.isRepeat && event.repeat) {
+        // IMPORTANT: Use UTC dates for calculations to avoid timezone shifts across days/months
+        let nextDateUTC = new Date(Date.UTC(currentDate.getUTCFullYear(), currentDate.getUTCMonth(), currentDate.getUTCDate()));
+        const limitDateUTC = new Date(Date.UTC(endDateLimit.getUTCFullYear(), endDateLimit.getUTCMonth(), endDateLimit.getUTCDate()));
+
+
+        while (nextDateUTC <= limitDateUTC) {
+          // Calculate the *next* occurrence based on the interval using UTC methods
+          switch (event.repeat) {
+            case 'daily':
+              nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 1);
+              break;
+            case 'weekly':
+              nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 7);
+              break;
+            case 'monthly':
+              const currentUTCMonth = nextDateUTC.getUTCMonth();
+              nextDateUTC.setUTCMonth(currentUTCMonth + 1);
+              // Adjust if day doesn't exist in next month (e.g., Jan 31 -> Feb 28/29)
+               // This check is tricky with UTC, ensure it handles month wrap-around correctly
+               if (nextDateUTC.getUTCMonth() !== (currentUTCMonth + 1) % 12) {
+                 // If the month increment resulted in skipping a month (e.g., Jan 31 to Mar),
+                 // set the date to 0, which goes to the last day of the *previous* month (Feb).
+                 nextDateUTC.setUTCDate(0);
+               }
+              break;
+            default:
+              // Should not happen based on schema, but break just in case
+              nextDateUTC = new Date(limitDateUTC.getTime() + 86400000); // Break loop (add one day in ms)
+              break;
+          }
+
+          if (nextDateUTC <= limitDateUTC) {
+            const repeatDateString = nextDateUTC.toISOString().split('T')[0];
+            // Add mark, preserving existing selection if any
+            marks[repeatDateString] = {
+              ...(marks[repeatDateString] || {}), // Preserve existing properties like selected
+              marked: true,
+              dotColor: '#50cebb',
+            };
+          }
+        }
+      }
+    });
+
+    // Add selection styling explicitly for the selectedDate, preserving marks
     if (selectedDate) {
       marks[selectedDate] = {
-        ...(marks[selectedDate] || {}),
+        ...(marks[selectedDate] || {}), // Keep existing marks/dots
         selected: true,
         selectedColor: '#50cebb',
-        marked: !!marks[selectedDate]?.marked, // Keep marked if it was already true
-        dotColor: marks[selectedDate]?.dotColor || '#50cebb'
+        // Ensure marked is true if it was already marked or if it's selected
+        marked: !!marks[selectedDate]?.marked || true,
+        dotColor: marks[selectedDate]?.dotColor || '#50cebb' // Keep existing dot color if present
       };
     }
     return marks;
-  }, [allEvents, selectedDate]);
+  }, [allEvents, selectedDate]); // Recalculate when events or selection change
+
+
+  // Calculate events to display for the selected date, including repeats
+  const eventsForSelectedDate = useMemo(() => {
+    if (!selectedDate) return [];
+
+    const displayEvents: ConvexEvent[] = [];
+    // Use UTC for comparison to align with markedDates logic if needed, or stick to local
+    const selectedDayStart = new Date(selectedDate + 'T00:00:00'); // Assuming local time interpretation
+    selectedDayStart.setHours(0,0,0,0);
+    const selectedDayStartTime = selectedDayStart.getTime();
+
+    allEvents.forEach((event) => {
+      if (!event.dateTime) return;
+
+      const originalEventTime = event.dateTime;
+      const originalEventDate = new Date(originalEventTime);
+      const originalEventHours = originalEventDate.getHours(); // Keep local hours/minutes
+      const originalEventMinutes = originalEventDate.getMinutes();
+
+      // Normalize original event date to midnight LOCAL time for comparison with selectedDayStart
+      const originalEventDayStart = new Date(originalEventDate);
+      originalEventDayStart.setHours(0, 0, 0, 0);
+      const originalEventDayStartTime = originalEventDayStart.getTime();
+
+      // 1. Check if the original event falls on the selected date (using LOCAL start times)
+      if (originalEventDayStartTime === selectedDayStartTime) {
+         if (!displayEvents.some(e => e._id === event._id && e.dateTime === event.dateTime)) {
+            displayEvents.push(event);
+         }
+      }
+
+      // 2. Check for repeating occurrences
+      if (event.isRepeat && event.repeat && originalEventDayStartTime < selectedDayStartTime) {
+         // Start calculation from the *original* event's date/time
+        let occurrenceDate = new Date(originalEventTime);
+        const limitDate = new Date(selectedDayStartTime + 86400000); // Limit search to just after the selected day
+
+
+        while (occurrenceDate.getTime() < limitDate.getTime()) {
+            let nextOccurrence = new Date(occurrenceDate);
+             // Calculate the *next* potential occurrence date (using LOCAL date methods)
+             switch (event.repeat) {
+                case 'daily':
+                  nextOccurrence.setDate(nextOccurrence.getDate() + 1);
+                  break;
+                case 'weekly':
+                  nextOccurrence.setDate(nextOccurrence.getDate() + 7);
+                  break;
+                case 'monthly':
+                  const currentMonth = nextOccurrence.getMonth();
+                  nextOccurrence.setMonth(currentMonth + 1);
+                  if (nextOccurrence.getDate() !== originalEventDate.getDate()) {
+                      // If the day changed (e.g. 31st to 30th), set to last day of month
+                      nextOccurrence.setDate(0);
+                  }
+
+                  // Further check if setting month pushed it too far (e.g. Jan 31 -> Mar 2/3)
+                   if (nextOccurrence.getMonth() !== (currentMonth + 1) % 12) {
+                       // If month skipped, it landed on the 1st of the month after the target.
+                       // Go back to the last day of the correct target month.
+                      nextOccurrence.setDate(0);
+                   }
+
+                  break;
+                default:
+                   nextOccurrence.setTime(limitDate.getTime()); // Break loop
+                   break;
+             }
+
+             // Normalize the calculated occurrence date to midnight LOCAL time
+             const nextOccurrenceDayStart = new Date(nextOccurrence);
+             nextOccurrenceDayStart.setHours(0, 0, 0, 0);
+
+             // Check if this occurrence falls exactly on the selected date's start time
+             if (nextOccurrenceDayStart.getTime() === selectedDayStartTime) {
+                 // Create a synthetic event object for this occurrence
+                 const occurrenceDateTime = new Date(selectedDayStartTime);
+                 occurrenceDateTime.setHours(originalEventHours, originalEventMinutes); // Use original time
+
+                // Avoid adding duplicates if the original event was also today
+                 if (!displayEvents.some(e => e._id === event._id && e.dateTime === occurrenceDateTime.getTime())) {
+                     displayEvents.push({
+                       ...event,
+                       // CRITICAL: Set the dateTime to the calculated occurrence time on the selected day
+                       dateTime: occurrenceDateTime.getTime(),
+                     });
+                 }
+                 // Found the occurrence for this date, no need to calculate further *for this specific event*
+                 break; // Exit the while loop for this event
+             } else if (nextOccurrenceDayStart.getTime() > selectedDayStartTime) {
+                 // We've passed the selected date, stop checking for this event
+                 break; // Exit the while loop for this event
+             }
+
+             // Update occurrenceDate to the calculated next one to continue the loop
+             occurrenceDate = nextOccurrence;
+        }
+      }
+    });
+
+    // Sort the final list of events for the day by their actual dateTime timestamp
+    displayEvents.sort((a, b) => a.dateTime - b.dateTime);
+
+
+    return displayEvents;
+  }, [allEvents, selectedDate]); // Also depends on allEvents and selectedDate
 
   const handleDayPress = (day: { dateString: string }) => {
     setSelectedDate(day.dateString);
@@ -252,11 +399,11 @@ export const Calendar = () => {
             </TouchableOpacity>
           </View>
 
-          {selectedDateEvents.length > 0 ? (
+          {eventsForSelectedDate.length > 0 ? (
             <FlatList
-              data={selectedDateEvents}
+              data={eventsForSelectedDate}
               renderItem={renderEventItem}
-              keyExtractor={(item) => item._id.toString()}
+              keyExtractor={(item, index) => `${item._id.toString()}-${item.dateTime}-${index}`}
               style={styles.eventList}
             />
           ) : (

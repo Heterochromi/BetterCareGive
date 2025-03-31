@@ -37,55 +37,57 @@ export default function Profile() {
   if (profile?.role === undefined) {
     return (
       <ThemedView style={styles.container}>
-        <ThemedText style={styles.title}>
-          Welcome to Better CareGive
-        </ThemedText>
-        {!userType ? (
-          <View style={styles.selectionContainer}>
-            <ThemedText style={styles.selectionTitle}>I am a:</ThemedText>
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.selectionButton}
-                onPress={() => handleSelectUserType("patient")}
-              >
-                <ThemedText style={styles.buttonText}>Patient</ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.selectionButton}
-                onPress={() => handleSelectUserType("caregiver")}
-              >
-                <ThemedText style={styles.buttonText}>Care-Giver</ThemedText>
-              </TouchableOpacity>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <ThemedText style={styles.title}>
+            Welcome to Better CareGive
+          </ThemedText>
+          {!userType ? (
+            <View style={styles.selectionContainer}>
+              <ThemedText style={styles.selectionTitle}>I am a:</ThemedText>
+              <View style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.selectionButton}
+                  onPress={() => handleSelectUserType("patient")}
+                >
+                  <ThemedText style={styles.buttonText}>Patient</ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.selectionButton}
+                  onPress={() => handleSelectUserType("caregiver")}
+                >
+                  <ThemedText style={styles.buttonText}>Care-Giver</ThemedText>
+                </TouchableOpacity>
+              </View>
             </View>
-          </View>
-        ) : (
-          <View style={styles.resultContainer}>
-            <ThemedText style={styles.resultText}>
-              Register as:
-              <Text style={styles.userType}>
-                {userType.charAt(0).toUpperCase() + userType.slice(1)}
-              </Text>
-            </ThemedText>
-            <ThemedView style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={styles.resetButton}
-                onPress={() => setUserType(null)}
-              >
-                <ThemedText style={styles.resetButtonText}>
-                  Change Role
-                </ThemedText>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.selectionButton}
-                onPress={() => handleConfirm(userType)}
-              >
-                <ThemedText style={styles.buttonText}>
-                  Confirm Role
-                </ThemedText>
-              </TouchableOpacity>
-            </ThemedView>
-          </View>
-        )}
+          ) : (
+            <View style={styles.resultContainer}>
+              <ThemedText style={styles.resultText}>
+                Register as:
+                <Text style={styles.userType}>
+                  {userType.charAt(0).toUpperCase() + userType.slice(1)}
+                </Text>
+              </ThemedText>
+              <ThemedView style={styles.buttonContainer}>
+                <TouchableOpacity
+                  style={styles.resetButton}
+                  onPress={() => setUserType(null)}
+                >
+                  <ThemedText style={styles.resetButtonText}>
+                    Change Role
+                  </ThemedText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.selectionButton}
+                  onPress={() => handleConfirm(userType)}
+                >
+                  <ThemedText style={styles.buttonText}>
+                    Confirm Role
+                  </ThemedText>
+                </TouchableOpacity>
+              </ThemedView>
+            </View>
+          )}
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -94,30 +96,22 @@ export default function Profile() {
   if (profile?.role === "patient") {
     return (
       <ThemedView style={styles.container}>
-        <UserProfileCard 
-          name={profile.name}
-          image={profile.image}
-          role={profile.role}
-          email={profile.email}
-        />
-        
-        {/* CaregiverList component to display patient's caregivers */}
-        <CaregiverList 
-          onCaregiverSelect={(caregiver) => {
-            // Handle caregiver selection (future functionality)
-            console.log('Selected caregiver:', caregiver);
-          }}
-        />
-                
-        {/* CareRequestsList contains a FlatList which is a virtualized list */}
-        <CareRequestsList />
-        
-        {/* <ThemedView style={styles.infoBox}>
-          <ThemedText style={styles.infoText}>
-            Accept requests from caregivers to allow them to help manage your care
-          </ThemedText>
-        </ThemedView> */}
-        
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <UserProfileCard 
+            name={profile.name}
+            image={profile.image}
+            role={profile.role}
+            email={profile.email}
+          />
+          
+          <CaregiverList 
+            onCaregiverSelect={(caregiver) => {
+              console.log('Selected caregiver:', caregiver);
+            }}
+          />
+                  
+          <CareRequestsList />
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -126,31 +120,25 @@ export default function Profile() {
   if (profile?.role === "caregiver") {
     return (
       <ThemedView style={styles.container}>
-        <UserProfileCard 
-          name={profile.name}
-          image={profile.image}
-          role={profile.role}
-          email={profile.email}
-        />
-        
-        <AddPatientForm 
-          onSuccess={() => {
-          }}
-        />
-        
-        {/* PatientsList contains a FlatList which is a virtualized list */}
-        <PatientsList 
-          onPatientSelect={(patient) => {
-            // Handle patient selection
-            console.log('Selected patient:', patient);
-          }}
-        />
-        
-        {/* <View style={styles.logoutContainer}>
-          <TouchableOpacity style={styles.logoutButton} onPress={() => signOut()}>
-            <ThemedText style={styles.logoutButtonText}>LOGOUT</ThemedText>
-          </TouchableOpacity>
-        </View> */}
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          <UserProfileCard 
+            name={profile.name}
+            image={profile.image}
+            role={profile.role}
+            email={profile.email}
+          />
+          
+          <AddPatientForm 
+            onSuccess={() => {
+            }}
+          />
+          
+          <PatientsList 
+            onPatientSelect={(patient) => {
+              console.log('Selected patient:', patient);
+            }}
+          />
+        </ScrollView>
       </ThemedView>
     );
   }
@@ -166,9 +154,10 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
     alignItems: "center",
-    justifyContent: "center",
   },
   title: {
     fontSize: 24,

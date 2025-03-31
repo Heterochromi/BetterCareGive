@@ -14,7 +14,6 @@ const schema = defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     role: v.optional(v.union(v.literal("caregiver"), v.literal("patient"))),
-    patientID: v.optional(v.string()),
   }).index("email", ["email"]),
   patientToCareGiver: defineTable({
     patient_name: v.string(),
@@ -31,6 +30,23 @@ const schema = defineSchema({
     patient_id: v.string(),
     patient_name: v.string(),
     careGiver_name: v.string(),
+  }),
+  events: defineTable({
+    title: v.string(),
+    description: v.string(),
+    dateTime: v.number(),
+    patient:v.object({
+      id:v.id("users"),
+      patient_name: v.string(),
+    }),
+    isSetByCareGiver:v.optional(v.boolean()),
+    careGiver:v.optional(v.object({
+      id:v.id("users"),
+      patient_name: v.string(),
+    })),
+    userId: v.string(),
+    isRepeat:v.optional(v.boolean()),
+    repeat:v.optional(v.union(v.literal("daily"), v.literal("weekly") , v.literal("monthly"))),
   }),
   // Your other tables...
 });

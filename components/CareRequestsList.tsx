@@ -54,6 +54,7 @@ export const CareRequestsList = () => {
       <FlatList
         data={requests}
         keyExtractor={(item) => item.requestId.toString()}
+        scrollEnabled={false}
         renderItem={({ item }) => (
           <ThemedView style={styles.requestCard}>
             <View style={styles.caregiverInfo}>

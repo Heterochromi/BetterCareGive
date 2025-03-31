@@ -98,15 +98,26 @@ export const Calendar = () => {
               nextDateUTC.setUTCDate(nextDateUTC.getUTCDate() + 7);
               break;
             case 'monthly':
+              // Remember the original day (UTC)
+              const originalUTCDay = new Date(event.dateTime).getUTCDate();
+
+              // Get the current month (before incrementing) of the occurrence being processed
               const currentUTCMonth = nextDateUTC.getUTCMonth();
+
+              // Move to the next month
               nextDateUTC.setUTCMonth(currentUTCMonth + 1);
-              // Adjust if day doesn't exist in next month (e.g., Jan 31 -> Feb 28/29)
-               // This check is tricky with UTC, ensure it handles month wrap-around correctly
-               if (nextDateUTC.getUTCMonth() !== (currentUTCMonth + 1) % 12) {
-                 // If the month increment resulted in skipping a month (e.g., Jan 31 to Mar),
-                 // set the date to 0, which goes to the last day of the *previous* month (Feb).
-                 nextDateUTC.setUTCDate(0);
-               }
+
+              // Try setting the day to the original day
+              nextDateUTC.setUTCDate(originalUTCDay);
+
+              // Check if setting the day pushed it into the *following* month
+              // (e.g., original day 31, target month Feb -> setting day 31 makes it Mar 2/3)
+              if (nextDateUTC.getUTCMonth() !== (currentUTCMonth + 1) % 12) {
+                // If the month is wrong, it means original day didn't exist.
+                // Go back to the target month and set day to 0 (last day of target month).
+                nextDateUTC.setUTCMonth(currentUTCMonth + 1); // Re-set the target month explicitly
+                nextDateUTC.setUTCDate(0); // Set to last day of that month
+              }
               break;
             default:
               // Should not happen based on schema, but break just in case
@@ -190,20 +201,26 @@ export const Calendar = () => {
                   nextOccurrence.setDate(nextOccurrence.getDate() + 7);
                   break;
                 case 'monthly':
+                  // Remember the original day (Local)
+                   const originalLocalDate = new Date(originalEventTime).getDate();
+
+                   // Get the current month (before incrementing) of the occurrence being processed
                   const currentMonth = nextOccurrence.getMonth();
+
+                  // Move to the next month
                   nextOccurrence.setMonth(currentMonth + 1);
-                  if (nextOccurrence.getDate() !== originalEventDate.getDate()) {
-                      // If the day changed (e.g. 31st to 30th), set to last day of month
-                      nextOccurrence.setDate(0);
-                  }
 
-                  // Further check if setting month pushed it too far (e.g. Jan 31 -> Mar 2/3)
+                  // Try setting the day to the original day
+                   nextOccurrence.setDate(originalLocalDate);
+
+                   // Check if setting the day pushed it into the *following* month
+                  // (e.g., original day 31, target month Feb -> setting day 31 makes it Mar 2/3)
                    if (nextOccurrence.getMonth() !== (currentMonth + 1) % 12) {
-                       // If month skipped, it landed on the 1st of the month after the target.
-                       // Go back to the last day of the correct target month.
-                      nextOccurrence.setDate(0);
+                       // If the month is wrong, it means original day didn't exist.
+                       // Go back to the target month and set day to 0 (last day of target month).
+                       nextOccurrence.setMonth(currentMonth + 1); // Re-set the target month explicitly
+                       nextOccurrence.setDate(0); // Set to last day of that month
                    }
-
                   break;
                 default:
                    nextOccurrence.setTime(limitDate.getTime()); // Break loop

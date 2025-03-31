@@ -48,6 +48,7 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
       <FlatList
         data={simplifiedCaregivers}
         keyExtractor={(item) => item.id.toString()}
+        scrollEnabled={false}
         renderItem={({ item }) => (
           <TouchableOpacity 
             style={styles.caregiverCard}

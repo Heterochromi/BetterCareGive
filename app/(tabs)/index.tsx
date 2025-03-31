@@ -15,24 +15,10 @@ export default function HomeScreen() {
   const [text, setText] = React.useState('stuff');
 
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      {/* <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">ST</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      {tasks?.map(({ _id, text }) => <ThemedText key={_id}>{text}</ThemedText>)}
-      <TextInput style={{color:"white"}} value={text} onChange={(e) => {
-        setText(e.target.value);
-      }}></TextInput> */}
-      
-    </ParallaxScrollView>
+    <View>
+
+  
+    </View>
   );
 }
 

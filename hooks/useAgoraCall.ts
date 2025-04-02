@@ -1,3 +1,7 @@
+import { api } from '@/convex/_generated/api';
+import { Id } from '@/convex/_generated/dataModel';
+import { useVoiceChatStore } from '@/lib/store';
+import { useMutation } from 'convex/react';
 import React, { useRef, useState, useEffect } from 'react';
 import { Platform ,PermissionsAndroid} from 'react-native';
 import {
@@ -19,12 +23,13 @@ const getPermission = async () => {
 
 // TODO: Replace with your actual App ID, Channel Name, and potentially fetch a token
 const appId = '5f71708ae6d344bba5862e3c531eda84';
-const channelName = 'test1';
 // const token = '<-- Insert token -->'; // Temporary token or fetched token
 const uid = 0; // Local user UID
 
 const useAgoraCall = () => {
     getPermission();
+    const makeCall = useMutation(api.chat.createCall);
+    const setIsInCall = useVoiceChatStore((state) => state.setIsInCall)
     const agoraEngineRef = useRef<IRtcEngine>(); // IRtcEngine instance
     const [isJoined, setIsJoined] = useState(false); // Whether the local user has joined the channel
     const [remoteUid, setRemoteUid] = useState(0); // Uid of the remote user
@@ -43,7 +48,7 @@ const useAgoraCall = () => {
         return () => {
             agoraEngineRef.current?.release();
         };
-    }, []); // Empty dependency array ensures this runs only once on mount
+    }, []);
 
     const setupVoiceSDKEngine = async () => {
         try {
@@ -57,7 +62,7 @@ const useAgoraCall = () => {
             // Register event handlers
             agoraEngine.registerEventHandler({
                 onJoinChannelSuccess: () => {
-                    showMessage('Successfully joined channel ' + channelName);
+                    showMessage('Successfully joined channel');
                     setIsJoined(true);
                 },
                 onUserJoined: (_connection, Uid) => {
@@ -94,7 +99,7 @@ const useAgoraCall = () => {
         }
     };
 
-    const join = async () => {
+    const join = async ({channelName}: {channelName:string}) => {
         if (isJoined) {
             showMessage('Already joined the channel');
             return;
@@ -112,7 +117,7 @@ const useAgoraCall = () => {
 
             // Join the channel
             // Using 0 for uid lets Agora assign a UID dynamically
-            await agoraEngine.joinChannel("", channelName, uid, {
+            await agoraEngine.joinChannel("", channelName ?? "", uid, {
                 clientRoleType: ClientRoleType.ClientRoleBroadcaster,
             });
             showMessage('Joining channel...');
@@ -122,7 +127,6 @@ const useAgoraCall = () => {
              showMessage(`Error joining channel: ${e instanceof Error ? e.message : String(e)}`);
         }
     };
-
     const leave = () => {
         try {
             const agoraEngine = agoraEngineRef.current;
@@ -132,11 +136,20 @@ const useAgoraCall = () => {
             }
             agoraEngine.leaveChannel();
             // State updates (isJoined, remoteUid) are handled by the onLeaveChannel event handler
+            setIsInCall(false);
         } catch (e) {
             console.error(e);
              showMessage(`Error leaving channel: ${e instanceof Error ? e.message : String(e)}`);
         }
     };
+    const createCall = async (receiverId: Id<"users">) => {
+        console.log("createCall", receiverId)
+        const call = await makeCall({ receiver_id: receiverId });
+        setIsInCall(true);
+        join({channelName: call ?? ""});
+        return call;
+    }
+    
 
     return {
         isJoined,
@@ -144,7 +157,12 @@ const useAgoraCall = () => {
         message,
         join,
         leave,
+        createCall
     };
 };
 
 export default useAgoraCall;
+
+
+
+ 

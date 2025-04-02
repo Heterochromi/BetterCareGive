@@ -15,6 +15,7 @@ import { AddPatientForm } from "@/components/AddPatientForm";
 import { PatientsList } from "@/components/PatientsList";
 import { CareRequestsList } from "@/components/CareRequestsList";
 import { CaregiverList } from '@/components/CaregiverList';
+import { VoiceCalls } from "@/components/VoiceCalls";
 
 export default function Profile() {
   const [userType, setUserType] = useState<"caregiver" | "patient" | null>(
@@ -120,7 +121,9 @@ export default function Profile() {
   if (profile?.role === "caregiver") {
     return (
       <ThemedView style={styles.container}>
+
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+
           <UserProfileCard 
             name={profile.name}
             image={profile.image}

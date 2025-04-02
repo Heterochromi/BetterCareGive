@@ -6,6 +6,7 @@ import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from "@/convex/_generated/dataModel";
 import useAgoraCall from '@/hooks/useAgoraCall';
+
 // Define a minimal type for patients
 type Patient = {
   id: Id<"users">;
@@ -22,8 +23,9 @@ type PatientsListProps = {
 export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsListProps) => {
   const patientsData = useQuery(api.user.getCaregiverPatients);
   const patients = patientsData || [];
+  const {createCall} = useAgoraCall();
 
-  const { join, leave, isJoined, remoteUid, message } = useAgoraCall();
+
 
   if (!patients || patients.length === 0) {
     return (
@@ -67,7 +69,9 @@ export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsList
               )}
             </View>
             {callMode && (
-              <TouchableOpacity onPress={join}><ThemedText>Call</ThemedText></TouchableOpacity>
+              <TouchableOpacity onPress={() => {
+                createCall(item.id)
+              }}><ThemedText>Call</ThemedText></TouchableOpacity>
             )}
           </TouchableOpacity>
         ))}

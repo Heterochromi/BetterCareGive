@@ -20,6 +20,17 @@ const schema = defineSchema({
     patient_id: v.string(),
     care_givers: v.optional(v.array(v.id("users"))),
   }),
+  onGoingCalls: defineTable({
+    caller_id: v.id("users"),
+    caller_name: v.string(),
+    caller_image: v.string(),
+    isCallerJoined: v.boolean(),
+    receiver_id: v.id("users"),
+    receiver_name: v.string(),
+    receiver_image: v.string(),
+    isReceiverJoined: v.boolean(),
+    channel_name: v.string(),
+  }).index("by_receiver_id", ["receiver_id"]),
   careGiverToPatient: defineTable({
     careGiver_name: v.string(),
     careGiver_id: v.string(),

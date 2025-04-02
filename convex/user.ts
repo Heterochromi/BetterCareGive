@@ -90,15 +90,19 @@ export const addPatientByEmail = mutation({
     }
 
     // Check if the patient is already assigned to this caregiver
-    const existingRelations = await ctx.db
-      .query("careGiverToPatient")
-      .filter((q) => 
-        q.eq(q.field("careGiver_id"), caregiverId.toString()) && 
-        q.eq(q.field("patients"), [patient._id])
-      )
-      .collect();
+    const existingCareGiver = await ctx.db.query("careGiverToPatient").filter((q) => q.eq(q.field("careGiver_id") , caregiverId.toString())).collect()
+    
+    // const existingRelations = await ctx.db
+    //   .query("careGiverToPatient")
+    //   .filter((q) => 
+    //     q.eq(q.field("careGiver_id"), caregiverId.toString()) && 
+    //     q.eq(q.field("patients"), [patient._id])
+    //   )
+    //   .collect();
 
-    if (existingRelations.length > 0) {
+    if (existingCareGiver.length > 0 && !existingCareGiver.find(x => {x.patients?.includes(patient._id)})) {
+      console.log(caregiverId)
+      console.log(existingCareGiver)
       throw new Error("Patient is already under your care");
     }
 

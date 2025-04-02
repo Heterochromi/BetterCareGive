@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useQuery } from 'convex/react';
@@ -45,17 +45,16 @@ export const PatientsList = ({ onPatientSelect }: PatientsListProps) => {
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={styles.title}>Your Patients</ThemedText>
-      <FlatList
-        data={simplifiedPatients}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
+      <ScrollView contentContainerStyle={styles.listContent}>
+        {simplifiedPatients.map((item) => (
+          <TouchableOpacity
+            key={item.id.toString()}
             style={styles.patientCard}
             onPress={() => onPatientSelect && onPatientSelect(item)}
           >
-            <Image 
-              source={{ uri: item.image || 'https://via.placeholder.com/50' }} 
-              style={styles.patientImage} 
+            <Image
+              source={{ uri: item.image || 'https://via.placeholder.com/50' }}
+              style={styles.patientImage}
             />
             <View style={styles.patientInfo}>
               <ThemedText style={styles.patientName}>{item.name}</ThemedText>
@@ -64,9 +63,8 @@ export const PatientsList = ({ onPatientSelect }: PatientsListProps) => {
               )}
             </View>
           </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.listContent}
-      />
+        ))}
+      </ScrollView>
     </ThemedView>
   );
 };

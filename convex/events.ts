@@ -136,6 +136,7 @@ export const deleteEvent = mutation({
   args: { eventId: v.id("events") },
   returns: v.null(),
   handler: async (ctx, args) => {
+    // Make sure getAuthUserId returns Id<"users"> or handle potential string case
     const identity = await getAuthUserId(ctx);
     if (!identity) {
       throw new Error("Unauthorized: No user identity found.");
@@ -144,20 +145,35 @@ export const deleteEvent = mutation({
     // Get the event to be deleted
     const event = await ctx.db.get(args.eventId);
     if (!event) {
-      // If the event doesn't exist, maybe it was already deleted. Return null.
       console.warn(`Event with ID ${args.eventId} not found for deletion.`);
       return null;
-      // Or uncomment below to throw an error if preferred
-      // throw new Error("Event not found.");
     }
+
+    const patientId = event.patient.id; // This is Id<"users">
 
     // Authorization check:
     // 1. Allow deletion if the current user is the patient the event belongs to.
-    // 2. Allow deletion if the current user is the caregiver who created the event.
-    const isPatientOwner = event.userId === identity;
-    const isCaregiverCreator = event.isSetByCareGiver === true && event.careGiver?.id === identity;
+    const isPatientOwner = patientId === identity;
 
-    if (!isPatientOwner && !isCaregiverCreator) {
+    // 2. Allow deletion if the current user is a caregiver linked to the patient.
+    let isLinkedCaregiver = false;
+    if (!isPatientOwner) {
+        // NOTE: Querying patientToCareGiver using filter because no index is defined.
+        // For performance, add `.index("by_patient_id", ["patient_id"])` to patientToCareGiver in schema.ts.
+        // ALSO NOTE: Schema defines patient_id as v.string(), but it should likely be v.id("users").
+        // Using patientId.toString() here to match the schema, but correcting the schema is recommended.
+        const patientCaregiversDoc = await ctx.db
+            .query("patientToCareGiver")
+            .filter(q => q.eq(q.field("patient_id"), patientId.toString())) // Filter by string representation
+            .unique();
+
+        if (patientCaregiversDoc && patientCaregiversDoc.care_givers) {
+            // Check if the current user's Id<"users"> is in the array (care_givers is correctly typed)
+            isLinkedCaregiver = patientCaregiversDoc.care_givers.includes(identity);
+        }
+    }
+
+    if (!isPatientOwner && !isLinkedCaregiver) {
       throw new Error("Unauthorized: User is not permitted to delete this event.");
     }
 

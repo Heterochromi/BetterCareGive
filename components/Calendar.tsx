@@ -422,10 +422,7 @@ export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:prop
 
   const renderEventItem = ({ item }: { item: ConvexEvent }) => {
     // Determine if the current user can delete this event
-    const canDelete = currentUser && (
-      (currentUser.id === item.userId) || // Patient owner
-      (item.isSetByCareGiver && item.careGiver?.id === currentUser.id) // Caregiver creator
-    );
+
 
     return (
       <View style={styles.eventItem}>
@@ -442,14 +439,13 @@ export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:prop
             <Text style={styles.eventCreatorText}>Set by: {item.patient.patient_name}</Text>
           )}
         </View>
-        {canDelete && (
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={() => handleDeleteEvent(item._id)}
           >
-            <Text style={styles.deleteButtonText}>✕</Text>
+            <Text style={styles.deleteButtonText}>Delete</Text>
           </TouchableOpacity>
-        )}
+  
       </View>
     );
   };

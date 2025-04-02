@@ -5,7 +5,7 @@ import { ThemedView } from './ThemedView';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from "@/convex/_generated/dataModel";
-
+import useAgoraCall from '@/hooks/useAgoraCall';
 // Define a minimal type for patients
 type Patient = {
   id: Id<"users">;
@@ -16,11 +16,14 @@ type Patient = {
 
 type PatientsListProps = {
   onPatientSelect?: (patient: Patient) => void;
+  callMode?: boolean;
 };
 
-export const PatientsList = ({ onPatientSelect }: PatientsListProps) => {
+export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsListProps) => {
   const patientsData = useQuery(api.user.getCaregiverPatients);
   const patients = patientsData || [];
+
+  const { join, leave, isJoined, remoteUid, message } = useAgoraCall();
 
   if (!patients || patients.length === 0) {
     return (
@@ -48,6 +51,7 @@ export const PatientsList = ({ onPatientSelect }: PatientsListProps) => {
       <ScrollView contentContainerStyle={styles.listContent}>
         {simplifiedPatients.map((item) => (
           <TouchableOpacity
+            disabled={callMode}
             key={item.id.toString()}
             style={styles.patientCard}
             onPress={() => onPatientSelect && onPatientSelect(item)}
@@ -62,6 +66,9 @@ export const PatientsList = ({ onPatientSelect }: PatientsListProps) => {
                 <ThemedText style={styles.patientEmail}>{item.email}</ThemedText>
               )}
             </View>
+            {callMode && (
+              <TouchableOpacity onPress={join}><ThemedText>Call</ThemedText></TouchableOpacity>
+            )}
           </TouchableOpacity>
         ))}
       </ScrollView>

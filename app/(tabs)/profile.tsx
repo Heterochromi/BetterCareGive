@@ -137,6 +137,7 @@ export default function Profile() {
             onPatientSelect={(patient) => {
               console.log('Selected patient:', patient);
             }}
+            callMode={true}
           />
         </ScrollView>
       </ThemedView>

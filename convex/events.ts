@@ -1,6 +1,7 @@
 import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Define the validator for the patient object based on the schema
 const patientValidator = v.object({
@@ -32,12 +33,16 @@ export const create = mutation({
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
-    const identity = await ctx.auth.getUserIdentity();
+    const identity = await getAuthUserId(ctx);
     if (!identity) {
       throw new Error("Unauthorized");
     }
 
-    const userId = identity.subject;
+    let userId = identity;
+
+    if(args.isSetByCareGiver) {
+      userId = args.patient.id
+    }
 
     // Insert the event with the new dateTime field
     const eventId = await ctx.db.insert("events", {
@@ -74,26 +79,92 @@ const eventObjectValidator = v.object({
 });
 
 export const list = query({
-  args: {},
+  args: {
+    patientID: v.optional(v.id("users"))
+  },
   returns: v.array(eventObjectValidator),
-  handler: async (ctx) => {
-    const identity = await ctx.auth.getUserIdentity();
+  handler: async (ctx , args) => {
+    const identity = await getAuthUserId(ctx);
     if (!identity) {
       return [];
     }
-
-    const userId = identity.subject;
-
-    // TODO: Refine filtering based on user role (patient/caregiver relationships)
+    
+    let userID = identity;
+    const user = await ctx.db.get(identity);
+    
+    if (user?.role === "patient") {
+      // Patient viewing their own events - userID is already set to identity
+    } else if (user?.role === "caregiver") {
+      // Only proceed with patient check if patientID is provided
+      if (args.patientID) {
+        const existingCareGiver = await ctx.db.query("careGiverToPatient")
+          .filter((q) => q.eq(q.field("careGiver_id"), identity))
+          .collect();
+          
+        if (existingCareGiver.length === 0) {
+          throw new Error("User is not a care giver");
+        }
+        
+        // Check if this caregiver has access to the specified patient
+        const hasAccess = existingCareGiver.some(x => 
+          x.patients && x.patients.some(patientId => 
+            patientId === args.patientID
+          )
+        );
+        
+        if (!hasAccess) {
+          throw new Error("Caregiver does not have access to this patient");
+        }
+        
+        // Set userID to the patient's ID to get their events
+        userID = args.patientID;
+      }
+    }
+    
+    // Filter events based on the determined userID
     const events = await ctx.db
       .query("events")
-      // This filter needs refinement
-      .filter((q) => q.eq(q.field("userId"), userId)) // Simplistic user filter
-      // Consider ordering by dateTime
-      .order("desc") // Example: order by most recent first
+      .filter((q) => q.eq(q.field("userId"), userID))
+      .order("desc")
       .collect();
 
     return events;
+  },
+});
+
+export const deleteEvent = mutation({
+  args: { eventId: v.id("events") },
+  returns: v.null(),
+  handler: async (ctx, args) => {
+    const identity = await getAuthUserId(ctx);
+    if (!identity) {
+      throw new Error("Unauthorized: No user identity found.");
+    }
+
+    // Get the event to be deleted
+    const event = await ctx.db.get(args.eventId);
+    if (!event) {
+      // If the event doesn't exist, maybe it was already deleted. Return null.
+      console.warn(`Event with ID ${args.eventId} not found for deletion.`);
+      return null;
+      // Or uncomment below to throw an error if preferred
+      // throw new Error("Event not found.");
+    }
+
+    // Authorization check:
+    // 1. Allow deletion if the current user is the patient the event belongs to.
+    // 2. Allow deletion if the current user is the caregiver who created the event.
+    const isPatientOwner = event.userId === identity;
+    const isCaregiverCreator = event.isSetByCareGiver === true && event.careGiver?.id === identity;
+
+    if (!isPatientOwner && !isCaregiverCreator) {
+      throw new Error("Unauthorized: User is not permitted to delete this event.");
+    }
+
+    // Delete the event
+    await ctx.db.delete(args.eventId);
+    console.log(`Event ${args.eventId} deleted by user ${identity}`);
+    return null;
   },
 });
 

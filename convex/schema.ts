@@ -48,7 +48,6 @@ const schema = defineSchema({
     isRepeat:v.optional(v.boolean()),
     repeat:v.optional(v.union(v.literal("daily"), v.literal("weekly") , v.literal("monthly"))),
   }),
-  // Your other tables...
 });
 
 export default schema;

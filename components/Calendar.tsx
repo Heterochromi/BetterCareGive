@@ -1,26 +1,24 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, FlatList, Switch, ScrollView, Platform } from 'react-native';
+import { View, Text, Modal, TextInput, TouchableOpacity, StyleSheet, FlatList, Switch, ScrollView, Platform, Alert } from 'react-native';
 import { Calendar as RNCalendar } from 'react-native-calendars';
-import { Picker } from '@react-native-picker/picker';
-import { useQuery, useMutation } from "convex/react";
-import { api } from "../convex/_generated/api";
 import { Doc, Id } from "../convex/_generated/dataModel";
 import DatePicker from 'react-native-date-picker'
+import { api } from '@/convex/_generated/api'; // Ensure api is imported
+import { useMutation } from 'convex/react'; // Ensure useMutation is imported
 
-// Define interface to match Convex document structure including new fields
-// Assuming the schema uses Id<'users'> for patient/caregiver IDs
+// Interface to match Convex document structure
 interface PatientInfo {
   id: Id<"users">;
   patient_name: string;
 }
 
-// Corrected CaregiverInfo interface to match schema (using patient_name)
+// Corrected CaregiverInfo interface
 interface CaregiverInfo {
   id: Id<"users">;
-  patient_name: string; // Corrected field name based on schema
+  patient_name: string;
 }
 
-// Updated ConvexEvent interface
+// ConvexEvent interface extending Doc<"events">
 interface ConvexEvent extends Doc<"events"> {
   title: string;
   description: string;
@@ -28,12 +26,29 @@ interface ConvexEvent extends Doc<"events"> {
   patient: PatientInfo;
   isSetByCareGiver?: boolean;
   careGiver?: CaregiverInfo;
-  userId: string; // Creator's ID
+  userId: string; 
   isRepeat?: boolean;
   repeat?: 'daily' | 'weekly' | 'monthly';
 }
 
-// Interface for marked dates in the calendar
+// Simplified Patient type from planner.tsx
+type Patient = {
+  id: Id<"users">;
+  name: string;
+  email?: string;
+  image?: string;
+};
+
+// Type definition matching the return type of api.user.getCurrentUser
+type CurrentUserType = {
+  id: Id<"users">;
+  role?: "caregiver" | "patient";
+  name?: string;
+  image?: string;
+  email?: string;
+};
+
+// MarkedDates interface
 interface MarkedDates {
   [date: string]: {
     marked?: boolean;
@@ -43,7 +58,16 @@ interface MarkedDates {
   };
 }
 
-export const Calendar = () => {
+ // Updated props type definition
+type props = {
+  currentUser: CurrentUserType; // Use the correct type returned by the query
+  createEvent: ReturnType<typeof useMutation<typeof api.events.create>>;
+  deleteEvent: ReturnType<typeof useMutation<typeof api.events.deleteEvent>>;
+  allEvents: Array<ConvexEvent>;
+  patient: Patient | undefined | null; // Allow patient to be optional/null
+}
+
+export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:props) => {
   const [selectedDate, setSelectedDate] = useState('');
   const [isModalVisible, setModalVisible] = useState(false);
   const [eventTitle, setEventTitle] = useState('');
@@ -53,11 +77,8 @@ export const Calendar = () => {
   const [isRepeat, setIsRepeat] = useState(false);
   const [repeatInterval, setRepeatInterval] = useState<'daily' | 'weekly' | 'monthly' | null>(null);
 
-  const currentUser = useQuery(api.user.getCurrentUser);
-  const createEvent = useMutation(api.events.create);
-
-  // Fetch *all* events once for marking the calendar and calculating selected day events
-  const allEvents = useQuery(api.events.list) || []; // Use this for both markedDates and eventsForSelectedDate
+  // Initialize the delete mutation hook
+  const performDeleteEvent = useMutation(api.events.deleteEvent);
 
   // Transform all events into calendar marking format, including repeats
   const markedDates: MarkedDates = useMemo(() => {
@@ -163,7 +184,7 @@ export const Calendar = () => {
     selectedDayStart.setHours(0,0,0,0);
     const selectedDayStartTime = selectedDayStart.getTime();
 
-    allEvents.forEach((event) => {
+    allEvents.forEach((event: ConvexEvent) => {
       if (!event.dateTime) return;
 
       const originalEventTime = event.dateTime;
@@ -322,9 +343,13 @@ export const Calendar = () => {
     if (currentUserRole === 'patient') {
       patientData = { id: currentUserId, patient_name: currentUserName };
     } else if (currentUserRole === 'caregiver') {
-      console.warn("Caregiver creating event - Using caregiver details as placeholder patient. Implement patient selection.");
-      const selectedPatientId = currentUserId;
-      const selectedPatientName = "Selected Patient Name";
+      if (!patient) {
+          console.error("Caregiver creating event without selected patient.");
+          alert("Error: Please select a patient first.");
+          return;
+      }
+      const selectedPatientId = patient.id;
+      const selectedPatientName = patient.name;
       patientData = { id: selectedPatientId, patient_name: selectedPatientName };
       caregiverData = { id: currentUserId, patient_name: currentUserName };
       eventIsSetByCaregiver = true;
@@ -361,26 +386,73 @@ export const Calendar = () => {
     }
   };
 
+  const handleDeleteEvent = (eventId: Id<"events">) => {
+    Alert.alert(
+      "Confirm Deletion",
+      "Are you sure you want to delete this event?",
+      [
+        {
+          text: "Cancel",
+          style: "cancel",
+        },
+        {
+          text: "Delete",
+          onPress: async () => {
+            try {
+              await performDeleteEvent({ eventId });
+              // Optionally, add feedback like a toast message
+              console.log(`Event ${eventId} deleted successfully.`);
+              // The event list will automatically update due to Convex reactivity.
+            } catch (error) {
+              console.error("Failed to delete event:", error);
+              Alert.alert("Error", "Could not delete the event.");
+            }
+          },
+          style: "destructive",
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+
   const formatTime = (dateOrTimestamp: number | Date) => {
     const date = typeof dateOrTimestamp === 'number' ? new Date(dateOrTimestamp) : dateOrTimestamp;
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
   };
 
-  const renderEventItem = ({ item }: { item: ConvexEvent }) => (
-    <View style={styles.eventItem}>
-      <Text style={styles.eventTitle}>{item.title} ({formatTime(item.dateTime)})</Text>
-      <Text style={styles.eventDescription}>{item.description}</Text>
-      {item.isRepeat && item.repeat && (
-        <Text style={styles.eventRepeatText}>Repeats: {item.repeat.charAt(0).toUpperCase() + item.repeat.slice(1)}</Text>
-      )}
-      {item.isSetByCareGiver && item.careGiver && (
-        <Text style={styles.eventCreatorText}>Set by Caregiver: {item.careGiver.patient_name}</Text>
-      )}
-      {!item.isSetByCareGiver && (
-        <Text style={styles.eventCreatorText}>Set by: {item.patient.patient_name}</Text>
-      )}
-    </View>
-  );
+  const renderEventItem = ({ item }: { item: ConvexEvent }) => {
+    // Determine if the current user can delete this event
+    const canDelete = currentUser && (
+      (currentUser.id === item.userId) || // Patient owner
+      (item.isSetByCareGiver && item.careGiver?.id === currentUser.id) // Caregiver creator
+    );
+
+    return (
+      <View style={styles.eventItem}>
+        <View style={styles.eventDetails}>
+          <Text style={styles.eventTitle}>{item.title} ({formatTime(item.dateTime)})</Text>
+          <Text style={styles.eventDescription}>{item.description}</Text>
+          {item.isRepeat && item.repeat && (
+            <Text style={styles.eventRepeatText}>Repeats: {item.repeat.charAt(0).toUpperCase() + item.repeat.slice(1)}</Text>
+          )}
+          {item.isSetByCareGiver && item.careGiver && (
+            <Text style={styles.eventCreatorText}>Set by Caregiver: {item.careGiver.patient_name}</Text>
+          )}
+          {!item.isSetByCareGiver && (
+            <Text style={styles.eventCreatorText}>Set by: {item.patient.patient_name}</Text>
+          )}
+        </View>
+        {canDelete && (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={() => handleDeleteEvent(item._id)}
+          >
+            <Text style={styles.deleteButtonText}>✕</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -580,6 +652,13 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     borderLeftWidth: 4,
     borderLeftColor: '#50cebb',
+    flexDirection: 'row', // Arrange details and button side-by-side
+    justifyContent: 'space-between', // Push details and button apart
+    alignItems: 'center', // Align items vertically center
+  },
+  eventDetails: {
+    flex: 1, // Allow details to take up available space
+    marginRight: 10, // Add some space before the delete button
   },
   eventTitle: {
     fontSize: 16,
@@ -606,6 +685,20 @@ const styles = StyleSheet.create({
     marginTop: 20,
     fontSize: 16,
     color: '#888',
+  },
+  deleteButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    backgroundColor: '#ff6b6b', // Red color for delete
+    borderRadius: 5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 10, // Add space if eventDetails doesn't have marginRight
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   modalContainer: {
     flex: 1,

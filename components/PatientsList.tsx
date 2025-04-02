@@ -4,10 +4,11 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { Id } from "@/convex/_generated/dataModel";
 
 // Define a minimal type for patients
 type Patient = {
-  id: any; // Using any to avoid type issues
+  id: Id<"users">;
   name: string;
   email?: string;
   image?: string;

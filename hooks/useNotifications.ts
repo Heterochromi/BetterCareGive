@@ -9,11 +9,9 @@ import { api } from '@/convex/_generated/api';
 import { useRouter } from 'expo-router';
 import { Id } from '@/convex/_generated/dataModel';
 
-// Define the background task name
 const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATIONS';
 
-// Define the background task handler
-// This needs to be defined outside of any React component or hook
+
 TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error, executionInfo }) => {
   if (error) {
     console.error('Background notification task error:', error);
@@ -21,10 +19,6 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error, execu
   }
   if (data) {
     console.log('Received a notification in the background:', data);
-    // Add any custom logic here to handle the notification data in the background
-    // e.g., update badge count, store data, etc.
-    // const notification = data.notification as Notifications.Notification;
-    // console.log('Background Title:', notification.request.content.title);
   }
 });
 

@@ -33,8 +33,8 @@ interface ConvexEvent extends Doc<"events"> {
 
 // Simplified Patient type from planner.tsx
 type Patient = {
-  id: Id<"users">;
-  name: string;
+  _id: Id<"users">;
+  name?: string; // Make name optional
   email?: string;
   image?: string;
 };
@@ -64,7 +64,7 @@ type props = {
   createEvent: ReturnType<typeof useMutation<typeof api.events.create>>;
   deleteEvent: ReturnType<typeof useMutation<typeof api.events.deleteEvent>>;
   allEvents: Array<ConvexEvent>;
-  patient: Patient | undefined | null; // Allow patient to be optional/null
+  patient: Patient | null; // Allow patient to be optional/null
 }
 
 export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:props) => {
@@ -348,8 +348,9 @@ export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:prop
           alert("Error: Please select a patient first.");
           return;
       }
-      const selectedPatientId = patient.id;
-      const selectedPatientName = patient.name;
+      const selectedPatientId = patient._id;
+      // Handle potentially undefined name
+      const selectedPatientName = patient.name ?? "Unknown Patient";
       patientData = { id: selectedPatientId, patient_name: selectedPatientName };
       caregiverData = { id: currentUserId, patient_name: currentUserName };
       eventIsSetByCaregiver = true;

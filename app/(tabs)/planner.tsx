@@ -3,24 +3,16 @@ import { Calendar } from '@/components/Calendar';
 import { View, ActivityIndicator, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { useQuery, useMutation } from "convex/react";
 import { api } from "@/convex/_generated/api";
-import { PatientsList } from '@/components/PatientsList';
+import { PatientsList, Patient } from '@/components/PatientsList';
 import { Doc, Id } from "@/convex/_generated/dataModel";
 import { useFocusEffect } from '@react-navigation/native'; // Import useFocusEffect
-
-// Define the simplified Patient type expected from PatientsList
-type Patient = {
-  id: Id<"users">;
-  name: string;
-  email?: string;
-  image?: string;
-};
 
 export default function Planner() {
   const currentUser = useQuery(api.user.getCurrentUser);
   const createEvent = useMutation(api.events.create);
   const deleteEvent = useMutation(api.events.deleteEvent);
 
-  const [selectedPatient, setSelectedPatient] = useState<Patient | undefined | null>(null);
+  const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
 
   // Reset selected patient when the screen focuses
   useFocusEffect(
@@ -40,7 +32,7 @@ export default function Planner() {
   // If caregiver, use selectedPatient's ID. If patient, use undefined (query handles fetching own events)
   const patientIdForQuery = 
     currentUser?.role === "caregiver" 
-      ? selectedPatient?.id // Fetch for selected patient if caregiver
+      ? selectedPatient?._id // Fetch for selected patient if caregiver
       : undefined;          // Fetch own events if patient (or if caregiver hasn't selected)
 
   // Fetch events based on the determined patientID.

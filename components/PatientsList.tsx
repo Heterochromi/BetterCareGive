@@ -8,8 +8,8 @@ import { Id } from "@/convex/_generated/dataModel";
 import useAgoraCall from '@/hooks/useAgoraCall';
 import { useNavigation } from '@react-navigation/native';
 
-// Define a type for patient (adjust fields as needed)
-interface Patient {
+// Define and export a type for patient (adjust fields as needed)
+export interface Patient {
   _id: Id<"users">;
   name?: string;
   email?: string;
@@ -54,6 +54,7 @@ export const PatientsList = ({ onPatientSelect, callMode = false, enableChat = f
         name: p.name,
         email: p.email,
         image: p.image,
+        
         // Add other fields if needed from the query result
     }));
 

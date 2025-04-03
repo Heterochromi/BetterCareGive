@@ -30,11 +30,6 @@ const CallModal: React.FC<CallModalProps> = ({
   const defaultImage = 'https://via.placeholder.com/100'; // Placeholder image
 
   const renderContent = () => {
-    if (!callDetails) {
-      // Show loading or nothing if callDetails are not available yet
-      return <ActivityIndicator size="large" color="#0000ff" />;
-    }
-
     // Determine call status text
     const statusText = isCurrentUserCaller ? 'Calling...' : 'Incoming Call';
 

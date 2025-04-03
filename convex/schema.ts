@@ -30,7 +30,7 @@ const schema = defineSchema({
     receiver_image: v.string(),
     isReceiverJoined: v.boolean(),
     channel_name: v.string(),
-  }).index("by_receiver_id", ["receiver_id"]),
+  }).index("by_receiver_id", ["receiver_id"]).index("by_caller_id", ["caller_id"]).index("by_channel_name", ["channel_name"]),
   careGiverToPatient: defineTable({
     careGiver_name: v.string(),
     careGiver_id: v.string(),

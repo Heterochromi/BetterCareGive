@@ -42,14 +42,14 @@ export const createCall = mutation({
       receiver_name: receiver.name ?? "",
       receiver_image: receiver.image ?? "",
       channel_name: channelName,
-      isCallerJoined: false,
+      isCallerJoined: true,
       isReceiverJoined: false,
     });
     return callId;
   },
 });
 
-// Gets the ongoing call details for a specific user (receiver)
+// Gets the ongoing call details for a current user
 export const getOngoingCallForUser = query({
   args: {},
   handler: async (ctx) => {
@@ -61,7 +61,17 @@ export const getOngoingCallForUser = query({
       .query("onGoingCalls")
        .withIndex("by_receiver_id", (q) => q.eq("receiver_id", identity))
       .unique();
-    return call;
+    if (call) {
+      return call;
+    }
+    if (!call) {
+      const call = await ctx.db
+      .query("onGoingCalls")
+       .withIndex("by_caller_id", (q) => q.eq("caller_id", identity))
+      .unique();
+      return call;
+    }
+    return null;
   },
 });
 
@@ -85,33 +95,32 @@ export const endCall = mutation({
     },
 });
 
-// Marks the receiver as joined in an ongoing call
-export const setReceiverJoined = mutation({
+// Marks a user (either caller or receiver) as joined in an ongoing call
+export const setUserJoined = mutation({
     args: { callId: v.id("onGoingCalls") },
     returns: v.null(),
     handler: async (ctx, args) => {
         const identity = await getAuthUserId(ctx);
+        if (!identity) {
+            return null; // Or throw an error if authentication is strictly required
+        }
+
         const existingCall = await ctx.db.get(args.callId);
 
         if (!existingCall) {
-            console.warn(`Call with ID ${args.callId} not found for joining.`);
+            console.warn(`Call with channel name ${args.callId} not found.`);
             return null;
         }
 
-        // Ensure the user calling this is the intended receiver
-        if (identity !== existingCall.receiver_id) {
-            console.error(`User ${identity} attempted to join call ${args.callId} intended for ${existingCall.receiver_id}`);
-            // Optionally throw an error or just return null
-             return null;
-            // throw new Error("Unauthorized: Cannot join call not intended for you.");
-        }
-
-        // Only update if not already joined
-        if (!existingCall.isReceiverJoined) {
-            await ctx.db.patch(args.callId, { isReceiverJoined: true });
-            console.log(`Receiver ${identity} joined call ${args.callId}.`);
+        if (identity === existingCall.caller_id) {
+            await ctx.db.patch(existingCall._id, { isCallerJoined: true });
+            console.log(`Caller ${identity} joined call ${existingCall._id}`);
+        } else if (identity === existingCall.receiver_id) {
+            await ctx.db.patch(existingCall._id, { isReceiverJoined: true });
+            console.log(`Receiver ${identity} joined call ${existingCall._id}`);
         } else {
-             console.log(`Receiver ${identity} is already joined in call ${args.callId}.`);
+            console.error(`User ${identity} is neither caller nor receiver for call ${existingCall._id}`);
+            return null; // Or throw an error
         }
 
         return null;

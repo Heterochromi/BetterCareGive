@@ -6,15 +6,15 @@ import { Id } from '../convex/_generated/dataModel';
 //   id: string | null;
 // }
 
-interface VoiceChatStore {
-    isInCall: boolean;
-    setIsInCall: (isInCall: boolean) => void;
-}
+// interface VoiceChatStore {
+//     isInCall: boolean;
+//     setIsInCall: (isInCall: boolean) => void;
+// }
 
-export const useVoiceChatStore = create<VoiceChatStore>((set) => ({
-    isInCall: false,
-    setIsInCall: (isInCall: boolean) => set({ isInCall }),
-}));
+// export const useVoiceChatStore = create<VoiceChatStore>((set) => ({
+//     isInCall: false,
+//     setIsInCall: (isInCall: boolean) => set({ isInCall }),
+// }));
 
 
 // interface GeneralStateStore {

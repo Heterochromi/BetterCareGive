@@ -4,6 +4,8 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import { useMutation } from 'convex/react';
+import { api } from '@/convex/_generated/api';
 
 // Define the background task name
 const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATION_TASK';
@@ -34,6 +36,20 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Helper function to handle notification data (avoids repetition)
+const handleCallNotificationData = (data: any, source: string) => {
+  console.log(`[${source}] Raw notification data received:`, JSON.stringify(data, null, 2));
+  if (data?.type === 'call') {
+    // The call modal should appear automatically due to the
+    // useQuery(api.chat.getOngoingCallForUser) updating when the app becomes active.
+    // No explicit navigation or modal triggering might be needed here if the
+    // component structure relies on the real-time query.
+    console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
+  } else {
+    console.log(`[${source}] Received notification data, but not type 'call':`, JSON.stringify(data, null, 2));
+  }
+};
+
 /**
  * A hook to manage push notifications, permissions, and scheduling.
  * Ensures background notification handling is registered.
@@ -41,6 +57,7 @@ Notifications.setNotificationHandler({
 export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const [permissionsGranted, setPermissionsGranted] = useState<boolean | null>(null);
+  const storePushToken = useMutation(api.notifications.storePushToken);
 
   // Refs for listeners to clean them up properly
   const responseListener = useRef<Notifications.Subscription>();
@@ -87,22 +104,46 @@ export function useNotifications() {
     try {
       const projectId = Constants.expoConfig?.extra?.eas?.projectId;
       if (!projectId) {
-        console.error("Project ID not found in app configuration (extra.eas.projectId). Cannot get Expo Push Token.");
-        // Optionally alert the user
-        // alert("Configuration error: Project ID missing.");
+        console.error("Project ID not found... Cannot get Expo Push Token.");
         return undefined;
       }
 
       const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-      console.log('Expo Push Token fetched:', tokenData.data);
+      // DETAILED LOGGING START
+      console.log('Full tokenData received from Expo:', JSON.stringify(tokenData, null, 2));
+      console.log('Expo Push Token fetched (data only):', tokenData.data);
+
+      // Basic check for token validity
+      if (!tokenData.data || !tokenData.data.startsWith('ExponentPushToken[') || tokenData.data.length < 30) { // Check format and minimum length
+          console.error('INVALID OR SHORT PUSH TOKEN RECEIVED:', tokenData.data);
+          // Optionally alert the user or prevent storage
+          return undefined;
+      }
+      // DETAILED LOGGING END
+
+      // Store the token in Convex
+      const deviceId = `${await Device.modelName ?? 'unknown'}-${await Device.deviceName ?? 'unknown'}`;
+      // DETAILED LOGGING START
+      console.log(`Attempting to store token: ${tokenData.data} for deviceId: ${deviceId}`);
+      // DETAILED LOGGING END
+      await storePushToken({
+        token: tokenData.data,
+        deviceId: deviceId,
+      });
+      // DETAILED LOGGING START
+      console.log('Token storage attempted in Convex.');
+      // DETAILED LOGGING END
+
       return tokenData.data;
     } catch (e) {
-      console.error('Failed to get Expo push token:', e);
+      // DETAILED LOGGING START
+      console.error('Failed during get/store Expo push token:', e);
+      // DETAILED LOGGING END
       // Optionally alert the user
       // alert(`Failed to get push token: ${e}`);
       return undefined;
     }
-  }, []);
+  }, [storePushToken]);
 
 
   const requestNotificationPermissions = useCallback(async (): Promise<boolean> => {
@@ -128,7 +169,7 @@ export function useNotifications() {
        // alert('You will not receive push notifications without granting permission.');
     }
     return granted;
-  }, [getPushToken]); // Include getPushToken dependency
+  }, [getPushToken]);
 
 
   // --- Effect for Initialization ---
@@ -157,17 +198,25 @@ export function useNotifications() {
           }
       }
 
-      // 4. Set up listeners for foreground interactions (optional, but common)
-      // Listener for user tapping on a notification
+      // 4. Check if the app was opened by a notification tap (killed state)
+      Notifications.getLastNotificationResponseAsync()
+        .then(response => {
+          if (isMounted && response?.notification) {
+            console.log('[Killed State Handler] App opened from killed state via notification. Full response:', JSON.stringify(response, null, 2));
+            handleCallNotificationData(response.notification.request.content.data, 'Killed State Handler');
+          }
+        });
+
+      // 5. Set up listener for user tapping on a notification while app is running/backgrounded
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
-        console.log('Notification Response Received:', response);
-        // Add navigation or other logic based on response.notification.request.content.data
+        console.log('[Response Listener] Notification Response Received (App running/background). Full response:', JSON.stringify(response, null, 2));
+        handleCallNotificationData(response.notification.request.content.data, 'Response Listener');
       });
 
-       // Listener for receiving notification while app is foregrounded (optional)
+       // 6. Set up listener for receiving notification while app is foregrounded
        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
-         console.log('Notification Received in Foreground:', notification);
-         // Optionally update UI or state based on the foreground notification
+         console.log('[Foreground Listener] Notification Received in Foreground. Full notification:', JSON.stringify(notification, null, 2));
+         handleCallNotificationData(notification.request.content.data, 'Foreground Listener');
        });
 
       console.log('Notification setup complete.');
@@ -186,9 +235,8 @@ export function useNotifications() {
          Notifications.removeNotificationSubscription(notificationListener.current);
        }
       // Note: Background task registration persists across app launches and doesn't need explicit cleanup here usually.
-      // You can unregister tasks using TaskManager.unregisterTaskAsync if needed, e.g., on logout.
     };
-  }, [registerBackgroundHandler, getPushToken]); // Add dependencies
+  }, [registerBackgroundHandler, getPushToken, storePushToken]); // Added storePushToken as dependency
 
 
   // --- Public API of the Hook ---

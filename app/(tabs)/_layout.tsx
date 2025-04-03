@@ -13,6 +13,7 @@ import { View, Text } from "react-native";
 import { Profile } from "@/components/Profile";
 import { VoiceCalls } from "@/components/VoiceCalls";
 import { useNotifications } from "@/hooks/useNotifications";
+import * as Notifications from 'expo-notifications';
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const {
@@ -37,12 +38,9 @@ export default function TabLayout() {
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
           headerShown: true,
           header: () => (
-            <View style={{ height: 100 }}>
-                            <Text>{expoPushToken}</Text>
-
-              <Button
-              
-                title="test Notifications"
+            <View style={{ height: 20 }}>
+              {/* <Button
+                title="test Notifications test Notifications test Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notifications"
                 onPress={() =>
                   scheduleLocalNotification(
                     {
@@ -50,7 +48,7 @@ export default function TabLayout() {
                       sound: "mySoundFile.wav", // Provide ONLY the base filename
                     },
                     {
-                      // type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
                       seconds: 2,
                       channelId: "new_emails",
 
@@ -58,7 +56,7 @@ export default function TabLayout() {
                   )
                 }
                 >
-              </Button>
+              </Button> */}
             </View>
           ),
           tabBarButton: HapticTab,

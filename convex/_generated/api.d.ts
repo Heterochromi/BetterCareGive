@@ -17,6 +17,7 @@ import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
+import type * as notifications from "../notifications.js";
 import type * as user from "../user.js";
 
 /**
@@ -32,6 +33,7 @@ declare const fullApi: ApiFromModules<{
   chat: typeof chat;
   events: typeof events;
   http: typeof http;
+  notifications: typeof notifications;
   user: typeof user;
 }>;
 export declare const api: FilterApi<

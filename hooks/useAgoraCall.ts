@@ -34,7 +34,6 @@ const useAgoraCall = () => {
 //   const setIsInCall = useVoiceChatStore((state) => state.setIsInCall);
   const agoraEngineRef = useRef<IRtcEngine>(); // IRtcEngine instance
   const [isJoined, setIsJoined] = useState(false);
-  const [callId, setCallId] = useState<Id<"onGoingCalls">>();
   const [remoteUid, setRemoteUid] = useState(0); // Uid of the remote user
   const [message, setMessage] = useState(""); // User prompt message
 
@@ -168,7 +167,6 @@ const useAgoraCall = () => {
 
   const createCall = async (receiverId: Id<"users">) => {
     const call = await makeCall({ receiver_id: receiverId });
-    setCallId(call ?? undefined);
     if (call) {
       join({ channelName: call, callId: call });
     }

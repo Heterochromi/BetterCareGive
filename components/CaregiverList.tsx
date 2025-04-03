@@ -5,6 +5,7 @@ import { ThemedView } from './ThemedView';
 import { useQuery } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
+import useAgoraCall from '@/hooks/useAgoraCall';
 
 // Define a type for caregiver
 type Caregiver = {
@@ -21,6 +22,7 @@ type CaregiverListProps = {
 export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
   const caregiversData = useQuery(api.user.getPatientCaregivers);
   const caregivers = caregiversData || [];
+  const {createCall} = useAgoraCall();
 
   if (!caregivers || caregivers.length === 0) {
     return (
@@ -51,9 +53,11 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
         scrollEnabled={false}
         renderItem={({ item }) => (
           <TouchableOpacity 
+           disabled
             style={styles.caregiverCard}
             // onPress={() => onCaregiverSelect && onCaregiverSelect(item)}
           >
+         
             <Image 
               source={{ uri: item.image || 'https://via.placeholder.com/50' }} 
               style={styles.caregiverImage} 
@@ -64,6 +68,9 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
                 <ThemedText style={styles.caregiverEmail}>{item.email}</ThemedText>
               )}
             </View>
+            <TouchableOpacity style={styles.callButton} onPress={() => createCall(item.id)}>
+              <ThemedText style={styles.callButtonText}>Call</ThemedText>
+            </TouchableOpacity>
           </TouchableOpacity>
         )}
         contentContainerStyle={styles.listContent}
@@ -130,5 +137,15 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+  },
+  callButton: {
+    backgroundColor: '#007AFF',
+    padding: 8,
+    borderRadius: 4,
+    marginLeft: 12,
+  },
+  callButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 }); 

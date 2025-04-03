@@ -69,9 +69,9 @@ export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsList
               )}
             </View>
             {callMode && (
-              <TouchableOpacity onPress={() => {
+              <TouchableOpacity style={styles.callButton} onPress={() => {
                 createCall(item.id)
-              }}><ThemedText>Call</ThemedText></TouchableOpacity>
+              }}><ThemedText style={styles.callButtonText}>Call</ThemedText></TouchableOpacity>
             )}
           </TouchableOpacity>
         ))}
@@ -132,5 +132,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#666',
     textAlign: 'center',
+  },
+  callButton: {
+    backgroundColor: '#007AFF',
+    padding: 8,
+    borderRadius: 4,
+    marginLeft: 12,
+  },
+  callButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
   },
 }); 

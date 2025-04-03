@@ -15,6 +15,11 @@ const schema = defineSchema({
     isAnonymous: v.optional(v.boolean()),
     role: v.optional(v.union(v.literal("caregiver"), v.literal("patient"))),
   }).index("email", ["email"]),
+  pushTokens: defineTable({
+    userId: v.id("users"),
+    token: v.string(),
+    deviceId: v.string(),
+  }).index("by_user", ["userId"]),
   patientToCareGiver: defineTable({
     patient_name: v.string(),
     patient_id: v.string(),

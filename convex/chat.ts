@@ -3,6 +3,8 @@ import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v4 as uuidv4 } from 'uuid';
+import { internal } from "./_generated/api";
+
 // Creates a new ongoing call record
 export const createCall = mutation({
   args: {
@@ -45,6 +47,24 @@ export const createCall = mutation({
       isCallerJoined: true,
       isReceiverJoined: false,
     });
+
+    // Send push notification to receiver
+    await ctx.scheduler.runAfter(0, internal.notifications.sendPushNotification, {
+      userId: args.receiver_id,
+      title: "Incoming Call",
+      body: `${caller.name ?? "Someone"} is calling you`,
+      data: {
+        type: "call",
+        callId: callId,
+        channelName: channelName,
+        caller: {
+          id: identity,
+          name: caller.name,
+          image: caller.image,
+        },
+      },
+    });
+
     return callId;
   },
 });

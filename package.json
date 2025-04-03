@@ -54,7 +54,11 @@
     "react-native-webview": "13.12.5",
     "tailwind-merge": "^3.0.2",
     "uuid": "^11.1.0",
-    "zustand": "^5.0.3"
+    "zustand": "^5.0.3",
+    "expo-notifications": "~0.29.14",
+    "expo-task-manager": "~12.0.6",
+    "expo-device": "~7.0.3",
+    "expo-dev-client": "~5.0.18"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

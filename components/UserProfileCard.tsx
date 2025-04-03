@@ -20,7 +20,7 @@ export const UserProfileCard = ({
     const { signOut } = useAuthActions();
 
   // Default image if none provided
-  const profileImage = image || 'https://via.placeholder.com/150';
+  const profileImage = image || '  ';
   
   return (
     <ThemedView style={styles.card}>

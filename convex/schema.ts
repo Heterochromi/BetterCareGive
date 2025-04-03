@@ -59,6 +59,22 @@ const schema = defineSchema({
     isRepeat:v.optional(v.boolean()),
     repeat:v.optional(v.union(v.literal("daily"), v.literal("weekly") , v.literal("monthly"))),
   }),
+  chatRooms: defineTable({
+    patient_id: v.id("users"),
+    careGiver_id: v.id("users"),
+    patient_name: v.string(),
+    careGiver_name: v.string(),
+    patient_image: v.string(),
+    careGiver_image: v.string(),
+  }),
+  messages: defineTable({
+    chatRoom_id: v.id("chatRooms"),
+    message: v.string(),
+    sender_id: v.id("users"),
+    sender_name: v.string(),
+    sender_image: v.string(),
+    time: v.number(),
+  }).index("by_chatRoom", ["chatRoom_id"])
 });
 
 export default schema;

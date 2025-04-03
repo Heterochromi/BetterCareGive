@@ -1,6 +1,6 @@
 import { Tabs } from "expo-router";
 import React from "react";
-import { Platform } from "react-native";
+import { Button, Platform } from "react-native";
 import { Redirect } from "expo-router";
 
 import { HapticTab } from "@/components/HapticTab";
@@ -12,9 +12,17 @@ import { useConvexAuth } from "convex/react";
 import { View, Text } from "react-native";
 import { Profile } from "@/components/Profile";
 import { VoiceCalls } from "@/components/VoiceCalls";
+import { useNotifications } from "@/hooks/useNotifications";
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
+  const {
+    permissionsGranted,
+    scheduleLocalNotification,
+    requestPermissions,
+    expoPushToken,
+  } = useNotifications();
 
+  requestPermissions();
   const colorScheme = useColorScheme();
 
   if (!isLoading && !isAuthenticated) {
@@ -23,13 +31,36 @@ export default function TabLayout() {
 
   return (
     <>
-            <VoiceCalls/>
+      <VoiceCalls />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
           headerShown: true,
-          header: () => <View style={{ height: 50 }}>
-          </View>,
+          header: () => (
+            <View style={{ height: 100 }}>
+                            <Text>{expoPushToken}</Text>
+
+              <Button
+              
+                title="test Notifications"
+                onPress={() =>
+                  scheduleLocalNotification(
+                    {
+                      title: "You've got mail! 📬",
+                      sound: "mySoundFile.wav", // Provide ONLY the base filename
+                    },
+                    {
+                      // type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                      seconds: 2,
+                      channelId: "new_emails",
+
+                    }
+                  )
+                }
+                >
+              </Button>
+            </View>
+          ),
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
           tabBarHideOnKeyboard: true,

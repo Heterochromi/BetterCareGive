@@ -8,6 +8,7 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+eas.json
 
 # Native
 *.orig.*
@@ -37,3 +38,4 @@ yarn-error.*
 
 *.cursor
 *android
+fcm.json

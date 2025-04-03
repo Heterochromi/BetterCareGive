@@ -6,6 +6,8 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
+import { useRouter } from 'expo-router';
+import { Id } from '@/convex/_generated/dataModel';
 
 // Define the background task name
 const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATIONS';
@@ -34,15 +36,6 @@ Notifications.setNotificationHandler({
     shouldSetBadge: false, 
   }),
 });
-// Might be useful later
-const handleCallNotificationData = (data: any, source: string) => {
-  console.log(`[${source}] Raw notification data received:`, JSON.stringify(data, null, 2));
-  if (data?.type === 'call') {
-    console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
-  } else {
-    console.log(`[${source}] Received notification data, but not type 'call':`, JSON.stringify(data, null, 2));
-  }
-};
 
 /**
  * A hook to manage push notifications, permissions, and scheduling.
@@ -52,10 +45,49 @@ export function useNotifications() {
   const [expoPushToken, setExpoPushToken] = useState<string | undefined>();
   const [permissionsGranted, setPermissionsGranted] = useState<boolean | null>(null);
   const storePushToken = useMutation(api.notifications.storePushToken);
+  const getOrCreateChatRoom = useMutation(api.chat.getOrCreateChatRoom);
+  const router = useRouter();
 
-  // Refs for listeners to clean them up properly
+  // Refs for listeners
   const responseListener = useRef<Notifications.Subscription>();
-  const notificationListener = useRef<Notifications.Subscription>(); // Optional: If you need to react to foreground notifications within the hook/component
+  const notificationListener = useRef<Notifications.Subscription>();
+
+  // Moved handleNotificationData inside the hook
+  const handleNotificationData = useCallback(async (data: any, source: string) => {
+    console.log(`[${source}] Raw notification data received:`, JSON.stringify(data, null, 2));
+
+    if (data?.type === 'call') {
+      console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
+      // TODO: Add navigation logic for calls if needed using router
+      // Example: router.push({ pathname: '/callScreen', params: { callInfo: JSON.stringify(data) } });
+    } else if (data?.type === 'message') {
+      console.log(`[${source}] Handling incoming message notification data:`, JSON.stringify(data, null, 2));
+      const sender = data.sender as { id: Id<"users">, name?: string | null, image?: string | null };
+      if (sender && sender.id) {
+        try {
+          const chatRoomId = await getOrCreateChatRoom({ otherUserId: sender.id });
+          if (chatRoomId) {
+             // Use router.push with pathname and params for Expo Router
+            router.push({
+              pathname: '/(tabs)/chatScreen', // Correct path based on file structure
+              params: {
+                chatRoomId: chatRoomId,
+                otherUserName: sender.name ?? 'Unknown User'
+              }
+            });
+          } else {
+            console.error(`[${source}] Failed to get or create chat room for sender ${sender.id}.`);
+          }
+        } catch (error) {
+          console.error(`[${source}] Error initiating chat via notification press:`, error);
+        }
+      } else {
+        console.error(`[${source}] Received message notification data without valid sender info:`, JSON.stringify(data, null, 2));
+      }
+    } else {
+      console.log(`[${source}] Received notification data, but not type 'call' or 'message':`, JSON.stringify(data, null, 2));
+    }
+  }, [router, getOrCreateChatRoom]); // Corrected dependency array
 
   // --- Helper Functions ---
 
@@ -195,20 +227,20 @@ export function useNotifications() {
         .then(response => {
           if (isMounted && response?.notification) {
             console.log('[Killed State Handler] App opened from killed state via notification. Full response:', JSON.stringify(response, null, 2));
-            handleCallNotificationData(response.notification.request.content.data, 'Killed State Handler');
+            handleNotificationData(response.notification.request.content.data, 'Killed State Handler'); // Use internal handler
           }
         });
 
       // 5. Set up listener for user tapping on a notification while app is running/backgrounded
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
         console.log('[Response Listener] Notification Response Received (App running/background). Full response:', JSON.stringify(response, null, 2));
-        handleCallNotificationData(response.notification.request.content.data, 'Response Listener');
+        handleNotificationData(response.notification.request.content.data, 'Response Listener'); // Use internal handler
       });
 
        // 6. Set up listener for receiving notification while app is foregrounded
        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
          console.log('[Foreground Listener] Notification Received in Foreground. Full notification:', JSON.stringify(notification, null, 2));
-         handleCallNotificationData(notification.request.content.data, 'Foreground Listener');
+         handleNotificationData(notification.request.content.data, 'Foreground Listener'); // Use internal handler
        });
 
       console.log('Notification setup complete.');
@@ -228,7 +260,7 @@ export function useNotifications() {
        }
       // Note: Background task registration persists across app launches and doesn't need explicit cleanup here usually.
     };
-  }, [registerBackgroundHandler, getPushToken, storePushToken]); // Added storePushToken as dependency
+  }, [registerBackgroundHandler, getPushToken, storePushToken, handleNotificationData]); // Added handleNotificationData dependency
 
 
   // --- Public API of the Hook ---

@@ -21,9 +21,10 @@ interface Patient {
 type PatientsListProps = {
   onPatientSelect?: (patient: Patient) => void;
   callMode?: boolean;
+  enableChat?: boolean;
 };
 
-export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsListProps) => {
+export const PatientsList = ({ onPatientSelect, callMode = false, enableChat = false }: PatientsListProps) => {
   const patients = useQuery(api.user.getCaregiverPatients);
   const navigation = useNavigation<any>();
   const getOrCreateChatRoom = useMutation(api.chat.getOrCreateChatRoom);
@@ -92,9 +93,9 @@ export const PatientsList = ({ onPatientSelect, callMode = false }: PatientsList
                 <ThemedText style={styles.callButtonText}>Call</ThemedText>
               </TouchableOpacity>
             )}
-            <TouchableOpacity style={styles.callButton} onPress={() => handleChatPress(item)}>
+            {enableChat && <TouchableOpacity style={styles.callButton} onPress={() => handleChatPress(item)}>
               <ThemedText style={styles.callButtonText}>Chat</ThemedText>
-            </TouchableOpacity>
+            </TouchableOpacity>}
           </TouchableOpacity>
         ))}
       </ScrollView>

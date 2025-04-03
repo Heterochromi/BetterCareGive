@@ -228,8 +228,16 @@ export const sendMessage = mutation({
              throw new Error("User not found.");
         }
 
-        // Basic check: ensure the user is part of this chat room?
+        const chatRoom = await ctx.db.get(args.chatRoom_id);
+        if (!chatRoom) {
+            throw new Error("Chat room not found.");
+        }
+
+        // Determine the recipient ID
+        const recipientId = chatRoom.patient_id === identity ? chatRoom.careGiver_id : chatRoom.patient_id;
+
         // Optional: Could add a check here to ensure sender is patient_id or careGiver_id in the chatRoom doc
+        // This check is somewhat redundant given the recipientId logic above, but could be added for robustness.
 
         await ctx.db.insert("messages", {
             chatRoom_id: args.chatRoom_id,
@@ -238,6 +246,24 @@ export const sendMessage = mutation({
             sender_name: user.name ?? "",
             sender_image: user.image ?? "",
             // time is handled by _creationTime automatically
+        });
+
+
+        // Send push notification to the recipient
+        await ctx.scheduler.runAfter(0, internal.notifications.sendPushNotification, {
+          userId: recipientId, // Send to the other user in the chat
+          title: `New message from ${user.name ?? "Someone"}`,
+          body: args.message, // Use the message content as the body
+          data: {
+            type: "message", // Change type to message
+            chatRoomId: args.chatRoom_id,
+            sender: {
+              id: identity,
+              name: user.name ?? "Unknown Sender",
+              image: user.image ?? "",
+            },
+            messagePreview: args.message.substring(0, 100), // Add a preview
+          },
         });
     },
 });

@@ -141,6 +141,7 @@ export default function Profile() {
               console.log('Selected patient:', patient);
             }}
             callMode={true}
+            enableChat={true}
           />
         </ScrollView>
       </ThemedView>

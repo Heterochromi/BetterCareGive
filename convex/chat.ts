@@ -4,6 +4,7 @@ import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { v4 as uuidv4 } from 'uuid';
 import { internal } from "./_generated/api";
+import { paginationOptsValidator } from "convex/server";
 
 // Creates a new ongoing call record
 export const createCall = mutation({
@@ -144,6 +145,122 @@ export const setUserJoined = mutation({
         }
 
         return null;
+    },
+});
+
+// Gets or creates a chat room between the current user and another user
+export const getOrCreateChatRoom = mutation({
+  args: {
+    otherUserId: v.id("users"),
+  },
+  handler: async (ctx, args) => {
+    const identity = await getAuthUserId(ctx);
+    if (!identity) {
+      throw new Error("User not authenticated.");
+    }
+
+    // Check if a chat room already exists between these two users
+    // We need to check both combinations (user A as patient, user B as caregiver AND vice versa)
+    let existingRoom = await ctx.db
+      .query("chatRooms")
+      .filter(q =>
+        q.or(
+          q.and(q.eq(q.field("patient_id"), identity), q.eq(q.field("careGiver_id"), args.otherUserId)),
+          q.and(q.eq(q.field("patient_id"), args.otherUserId), q.eq(q.field("careGiver_id"), identity))
+        )
+      )
+      .first(); // Use first() as there should only be one
+
+    if (existingRoom) {
+      return existingRoom._id;
+    }
+
+    // If no room exists, create one
+    const currentUser = await ctx.db.get(identity);
+    const otherUser = await ctx.db.get(args.otherUserId);
+
+    if (!currentUser || !otherUser) {
+      throw new Error("One or both users not found.");
+    }
+
+    // Determine who is patient and caregiver based on roles or some other logic
+    // For now, let's assume the initiator (current user) determines the role split,
+    // or perhaps based on the user.role field if it exists.
+    // **This logic might need adjustment based on your specific user roles**
+    // Let's assume for now the logged-in user is the patient if the other is a caregiver, and vice-versa.
+    // Or, more simply, assign based on who initiates? Let's assign the initiator as patient for simplicity here.
+    // A more robust solution would check user roles.
+    const patientId = identity;
+    const careGiverId = args.otherUserId;
+    const patientName = currentUser.name ?? "";
+    const careGiverName = otherUser.name ?? "";
+    const patientImage = currentUser.image ?? "";
+    const careGiverImage = otherUser.image ?? "";
+
+
+    const newRoomId = await ctx.db.insert("chatRooms", {
+        // Adjust logic based on actual roles if available
+        patient_id: patientId,
+        careGiver_id: careGiverId,
+        patient_name: patientName,
+        careGiver_name: careGiverName,
+        patient_image: patientImage,
+        careGiver_image: careGiverImage,
+    });
+
+    return newRoomId;
+  },
+});
+
+// Sends a message to a specific chat room
+export const sendMessage = mutation({
+    args: {
+        chatRoom_id: v.id("chatRooms"),
+        message: v.string(),
+    },
+    handler: async (ctx, args) => {
+        const identity = await getAuthUserId(ctx);
+        if (!identity) {
+            throw new Error("User not authenticated.");
+        }
+        const user = await ctx.db.get(identity);
+        if (!user) {
+             throw new Error("User not found.");
+        }
+
+        // Basic check: ensure the user is part of this chat room?
+        // Optional: Could add a check here to ensure sender is patient_id or careGiver_id in the chatRoom doc
+
+        await ctx.db.insert("messages", {
+            chatRoom_id: args.chatRoom_id,
+            message: args.message,
+            sender_id: identity,
+            sender_name: user.name ?? "",
+            sender_image: user.image ?? "",
+            // time is handled by _creationTime automatically
+        });
+    },
+});
+
+// Gets messages for a chat room with pagination
+export const getMessages = query({
+    args: {
+        chatRoom_id: v.id("chatRooms"),
+        paginationOpts: paginationOptsValidator, // Use the validator
+     },
+    handler: async (ctx, args) => {
+        const identity = await getAuthUserId(ctx);
+        if (!identity) {
+           return { page: [], isDone: true, continueCursor: "" }; // Return empty for non-auth users
+        }
+
+        // Optional: Add check to ensure user is part of the room
+
+        return await ctx.db
+            .query("messages")
+            .withIndex("by_chatRoom", (q) => q.eq("chatRoom_id", args.chatRoom_id))
+            .order("desc") // Order by creation time, newest first
+            .paginate(args.paginationOpts); // Apply pagination
     },
 });
 

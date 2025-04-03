@@ -13,7 +13,6 @@ import { View, Text } from "react-native";
 import { Profile } from "@/components/Profile";
 import { VoiceCalls } from "@/components/VoiceCalls";
 import { useNotifications } from "@/hooks/useNotifications";
-import * as Notifications from 'expo-notifications';
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
   const {
@@ -38,7 +37,7 @@ export default function TabLayout() {
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
           headerShown: true,
           header: () => (
-            <View style={{ height: 20 }}>
+            <View style={{ height: 0 , position: 'absolute'  }}>
               {/* <Button
                 title="test Notifications test Notifications test Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notifications"
                 onPress={() =>
@@ -87,6 +86,13 @@ export default function TabLayout() {
             tabBarIcon: ({ color }) => (
               <IconSymbol size={28} name="calendar" color={color} />
             ),
+          }}
+        />
+        <Tabs.Screen
+          name="chatScreen"
+          options={{
+            title: "Chat",
+            tabBarIcon: () => <></>,
           }}
         />
         <Tabs.Screen

@@ -8,7 +8,7 @@ import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 
 // Define the background task name
-const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATION_TASK';
+const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATIONS';
 
 // Define the background task handler
 // This needs to be defined outside of any React component or hook
@@ -19,7 +19,6 @@ TaskManager.defineTask(BACKGROUND_NOTIFICATION_TASK, async ({ data, error, execu
   }
   if (data) {
     console.log('Received a notification in the background:', data);
-    
     // Add any custom logic here to handle the notification data in the background
     // e.g., update badge count, store data, etc.
     // const notification = data.notification as Notifications.Notification;
@@ -32,18 +31,13 @@ Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
     shouldPlaySound: true,
-    shouldSetBadge: false, // Or true if you want the OS to handle it
+    shouldSetBadge: false, 
   }),
 });
-
-// Helper function to handle notification data (avoids repetition)
+// Might be useful later
 const handleCallNotificationData = (data: any, source: string) => {
   console.log(`[${source}] Raw notification data received:`, JSON.stringify(data, null, 2));
   if (data?.type === 'call') {
-    // The call modal should appear automatically due to the
-    // useQuery(api.chat.getOngoingCallForUser) updating when the app becomes active.
-    // No explicit navigation or modal triggering might be needed here if the
-    // component structure relies on the real-time query.
     console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
   } else {
     console.log(`[${source}] Received notification data, but not type 'call':`, JSON.stringify(data, null, 2));
@@ -160,13 +154,11 @@ export function useNotifications() {
     console.log(`Notification permissions ${granted ? 'granted' : 'denied'}. Status: ${status}`);
 
     if (granted) {
-      // Attempt to get token immediately after permissions are granted
        const token = await getPushToken();
        setExpoPushToken(token);
     } else {
        console.warn('Notification permissions were not granted.');
-       // Optionally alert the user
-       // alert('You will not receive push notifications without granting permission.');
+       alert('You will not receive push notifications without granting permission.');
     }
     return granted;
   }, [getPushToken]);

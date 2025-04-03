@@ -1,11 +1,12 @@
 import React from 'react';
-import { View, StyleSheet, FlatList, Image, TouchableOpacity } from 'react-native';
+import { View, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView } from 'react-native';
 import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
-import { useQuery } from 'convex/react';
+import { useQuery, useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { Id } from '@/convex/_generated/dataModel';
 import useAgoraCall from '@/hooks/useAgoraCall';
+import { useNavigation } from '@react-navigation/native';
 
 // Define a type for caregiver
 type Caregiver = {
@@ -23,6 +24,24 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
   const caregiversData = useQuery(api.user.getPatientCaregivers);
   const caregivers = caregiversData || [];
   const {createCall} = useAgoraCall();
+  const navigation = useNavigation<any>();
+  const getOrCreateChatRoom = useMutation(api.chat.getOrCreateChatRoom);
+
+  const handleChatPress = async (caregiver: Caregiver) => {
+    try {
+      const chatRoomId = await getOrCreateChatRoom({ otherUserId: caregiver.id });
+      if (chatRoomId) {
+        navigation.navigate('chatScreen', {
+          chatRoomId: chatRoomId,
+          otherUserName: caregiver.name ?? 'Caregiver'
+        });
+      } else {
+        console.error("Failed to get or create chat room.");
+      }
+    } catch (error) {
+      console.error("Error initiating chat:", error);
+    }
+  };
 
   if (!caregivers || caregivers.length === 0) {
     return (
@@ -47,17 +66,9 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
   return (
     <ThemedView style={styles.container}>
       <ThemedText style={styles.title}>Your Care-givers</ThemedText>
-      <FlatList
-        data={simplifiedCaregivers}
-        keyExtractor={(item) => item.id.toString()}
-        scrollEnabled={false}
-        renderItem={({ item }) => (
-          <TouchableOpacity 
-           disabled
-            style={styles.caregiverCard}
-            // onPress={() => onCaregiverSelect && onCaregiverSelect(item)}
-          >
-         
+      <ScrollView contentContainerStyle={styles.listContent}>
+        {simplifiedCaregivers.map((item) => (
+          <View key={item.id.toString()} style={styles.caregiverCard}>
             <Image 
               source={{ uri: item.image || 'https://via.placeholder.com/50' }} 
               style={styles.caregiverImage} 
@@ -71,10 +82,12 @@ export const CaregiverList = ({ onCaregiverSelect }: CaregiverListProps) => {
             <TouchableOpacity style={styles.callButton} onPress={() => createCall(item.id)}>
               <ThemedText style={styles.callButtonText}>Call</ThemedText>
             </TouchableOpacity>
-          </TouchableOpacity>
-        )}
-        contentContainerStyle={styles.listContent}
-      />
+            <TouchableOpacity style={styles.callButton} onPress={() => handleChatPress(item)}>
+              <ThemedText style={styles.callButtonText}>Chat</ThemedText>
+            </TouchableOpacity>
+          </View>
+        ))}
+      </ScrollView>
     </ThemedView>
   );
 };

@@ -78,7 +78,6 @@ const schema = defineSchema({
     sender_id: v.id("users"),
     sender_name: v.string(),
     sender_image: v.string(),
-    time: v.number(),
   }).index("by_chatRoom", ["chatRoom_id"])
 });
 

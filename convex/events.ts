@@ -44,8 +44,8 @@ export const create = mutation({
 
     let userId = identity;
 
-    if(args.isSetByCareGiver) {
-      userId = args.patient.id
+    if (args.isSetByCareGiver) {
+      userId = args.patient.id;
     }
 
     // Insert the event with the new dateTime field
@@ -61,17 +61,57 @@ export const create = mutation({
       repeat: args.repeat,
     });
 
-    if(!args.isRepeat) {
-      await ctx.scheduler.runAt(args.dateTime, internal.notifications.sendPushNotification, {
-        userId: userId, // Send to the other user in the chat
-        title: `Scheduled Event: ${args.title}`,
-        body: `Time for ${args.title}`, // Use the message content as the body
-        data: {
-          type: "event",
-          eventId: eventId,
-        },
-      });
+
+    const eventNotificationData =   {
+      userId: userId, // Send to the other user in the chat
+      title: `Scheduled Event: ${args.title}`,
+      body: `Time for ${args.title}`, // Use the message content as the body
+      data: {
+        type: "event",
+        eventId: eventId,
+      },
     }
+
+    if (!args.isRepeat) {
+      await ctx.scheduler.runAt(
+        args.dateTime,
+        internal.notifications.sendPushNotification,
+        eventNotificationData
+      );
+    }
+
+    if (args.isRepeat && args.repeat) { // Ensure repeat is also provided
+      const date = new Date(args.dateTime);
+      const minute = date.getMinutes();
+      const hour = date.getHours();
+      const dayOfMonth = date.getDate();
+      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
+
+      let cronspec: string;
+      switch (args.repeat) {
+        case "daily":
+          cronspec = `${minute} ${hour} * * *`; // Run daily at the specified time
+          break;
+        case "weekly":
+          cronspec = `${minute} ${hour} * * ${dayOfWeek}`; // Run weekly on the specified day and time
+          break;
+        case "monthly":
+          cronspec = `${minute} ${hour} ${dayOfMonth} * *`; // Run monthly on the specified day and time
+          break;
+        default:
+          // Handle unexpected repeat value, maybe throw an error or log a warning
+          console.error(`Invalid repeat value: ${args.repeat}`);
+          // Optionally skip registration or use a default/fallback spec
+          return eventId; // Or handle appropriately
+      }
+      crons.register(
+        ctx,
+        { kind: "cron", cronspec: cronspec },
+        internal.notifications.sendPushNotification,
+        eventNotificationData
+      );
+    }
+
     return eventId;
   },
 });
@@ -95,47 +135,48 @@ const eventObjectValidator = v.object({
 
 export const list = query({
   args: {
-    patientID: v.optional(v.id("users"))
+    patientID: v.optional(v.id("users")),
   },
   returns: v.array(eventObjectValidator),
-  handler: async (ctx , args) => {
+  handler: async (ctx, args) => {
     const identity = await getAuthUserId(ctx);
     if (!identity) {
       return [];
     }
-    
+
     let userID = identity;
     const user = await ctx.db.get(identity);
-    
+
     if (user?.role === "patient") {
       // Patient viewing their own events - userID is already set to identity
     } else if (user?.role === "caregiver") {
       // Only proceed with patient check if patientID is provided
       if (args.patientID) {
-        const existingCareGiver = await ctx.db.query("careGiverToPatient")
+        const existingCareGiver = await ctx.db
+          .query("careGiverToPatient")
           .filter((q) => q.eq(q.field("careGiver_id"), identity))
           .collect();
-          
+
         if (existingCareGiver.length === 0) {
           throw new Error("User is not a care giver");
         }
-        
+
         // Check if this caregiver has access to the specified patient
-        const hasAccess = existingCareGiver.some(x => 
-          x.patients && x.patients.some(patientId => 
-            patientId === args.patientID
-          )
+        const hasAccess = existingCareGiver.some(
+          (x) =>
+            x.patients &&
+            x.patients.some((patientId) => patientId === args.patientID)
         );
-        
+
         if (!hasAccess) {
           throw new Error("Caregiver does not have access to this patient");
         }
-        
+
         // Set userID to the patient's ID to get their events
         userID = args.patientID;
       }
     }
-    
+
     // Filter events based on the determined userID
     const events = await ctx.db
       .query("events")
@@ -173,23 +214,25 @@ export const deleteEvent = mutation({
     // 2. Allow deletion if the current user is a caregiver linked to the patient.
     let isLinkedCaregiver = false;
     if (!isPatientOwner) {
-        // NOTE: Querying patientToCareGiver using filter because no index is defined.
-        // For performance, add `.index("by_patient_id", ["patient_id"])` to patientToCareGiver in schema.ts.
-        // ALSO NOTE: Schema defines patient_id as v.string(), but it should likely be v.id("users").
-        // Using patientId.toString() here to match the schema, but correcting the schema is recommended.
-        const patientCaregiversDoc = await ctx.db
-            .query("patientToCareGiver")
-            .filter(q => q.eq(q.field("patient_id"), patientId.toString())) // Filter by string representation
-            .unique();
+      // NOTE: Querying patientToCareGiver using filter because no index is defined.
+      // For performance, add `.index("by_patient_id", ["patient_id"])` to patientToCareGiver in schema.ts.
+      // ALSO NOTE: Schema defines patient_id as v.string(), but it should likely be v.id("users").
+      // Using patientId.toString() here to match the schema, but correcting the schema is recommended.
+      const patientCaregiversDoc = await ctx.db
+        .query("patientToCareGiver")
+        .filter((q) => q.eq(q.field("patient_id"), patientId.toString())) // Filter by string representation
+        .unique();
 
-        if (patientCaregiversDoc && patientCaregiversDoc.care_givers) {
-            // Check if the current user's Id<"users"> is in the array (care_givers is correctly typed)
-            isLinkedCaregiver = patientCaregiversDoc.care_givers.includes(identity);
-        }
+      if (patientCaregiversDoc && patientCaregiversDoc.care_givers) {
+        // Check if the current user's Id<"users"> is in the array (care_givers is correctly typed)
+        isLinkedCaregiver = patientCaregiversDoc.care_givers.includes(identity);
+      }
     }
 
     if (!isPatientOwner && !isLinkedCaregiver) {
-      throw new Error("Unauthorized: User is not permitted to delete this event.");
+      throw new Error(
+        "Unauthorized: User is not permitted to delete this event."
+      );
     }
 
     // Delete the event

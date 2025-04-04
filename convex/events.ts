@@ -2,6 +2,10 @@ import { mutation, query } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { Crons } from "@convex-dev/crons";
+import { components, internal } from "./_generated/api";
+
+const crons = new Crons(components.crons);
 
 // Define the validator for the patient object based on the schema
 const patientValidator = v.object({
@@ -57,6 +61,17 @@ export const create = mutation({
       repeat: args.repeat,
     });
 
+    if(!args.isRepeat) {
+      await ctx.scheduler.runAt(args.dateTime, internal.notifications.sendPushNotification, {
+        userId: userId, // Send to the other user in the chat
+        title: `Scheduled Event: ${args.title}`,
+        body: `Time for ${args.title}`, // Use the message content as the body
+        data: {
+          type: "event",
+          eventId: eventId,
+        },
+      });
+    }
     return eventId;
   },
 });

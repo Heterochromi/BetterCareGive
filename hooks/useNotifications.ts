@@ -6,7 +6,7 @@ import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { useMutation } from 'convex/react';
 import { api } from '@/convex/_generated/api';
-import { useRouter } from 'expo-router';
+import { useRouter, Router } from 'expo-router';
 import { Id } from '@/convex/_generated/dataModel';
 
 const BACKGROUND_NOTIFICATION_TASK = 'BACKGROUND_NOTIFICATIONS';
@@ -31,6 +31,71 @@ Notifications.setNotificationHandler({
   }),
 });
 
+// Define a basic type for notification data
+type NotificationData = {
+  type?: 'call' | 'message' | 'event' | string; // Allow other string types too
+  sender?: {
+    id: Id<'users'>;
+    name?: string | null;
+    image?: string | null;
+  };
+  // Add other potential properties for 'call' or other types
+  [key: string]: any; // Allow other properties
+};
+
+// Helper function to handle message notifications
+const handleMessageNotification = async (
+  data: NotificationData,
+  source: string,
+  getOrCreateChatRoom: ReturnType<typeof useMutation<typeof api.chat.getOrCreateChatRoom>>,
+  router: Router // Use the imported Router type
+) => {
+  console.log(`[${source}] Handling incoming message notification data:`, JSON.stringify(data, null, 2));
+  const sender = data.sender;
+  if (sender && sender.id) {
+    try {
+      const chatRoomId = await getOrCreateChatRoom({ otherUserId: sender.id });
+      if (chatRoomId) {
+        router.push({
+          pathname: '/(tabs)/chatScreen', // Correct path based on file structure
+          params: {
+            chatRoomId: chatRoomId,
+            otherUserName: sender.name ?? 'Unknown User'
+          }
+        });
+      } else {
+        console.error(`[${source}] Failed to get or create chat room for sender ${sender.id}.`);
+      }
+    } catch (error) {
+      console.error(`[${source}] Error initiating chat via notification press:`, error);
+    }
+  } else {
+    console.error(`[${source}] Received message notification data without valid sender info:`, JSON.stringify(data, null, 2));
+  }
+};
+
+// Helper function to handle call notifications (placeholder)
+const handleCallNotification = async (
+  data: NotificationData,
+  source: string,
+  router: Router // Use the imported Router type
+) => {
+   console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
+   // TODO: Implement navigation logic for calls
+   // Example: router.push({ pathname: '/callScreen', params: { callInfo: JSON.stringify(data) } });
+};
+
+// Helper function to handle event notifications (placeholder)
+const handleEventNotification = async (
+  data: NotificationData,
+  source: string,
+  router: Router // Use the imported Router type
+) => {
+  console.log(`[${source}] Handling incoming event notification data:`, JSON.stringify(data, null, 2));
+  // TODO: Implement navigation logic for events
+  // Example: router.push({ pathname: '/eventScreen', params: { eventInfo: JSON.stringify(data) } });
+}
+
 /**
  * A hook to manage push notifications, permissions, and scheduling.
  * Ensures background notification handling is registered.
@@ -46,42 +111,30 @@ export function useNotifications() {
   const responseListener = useRef<Notifications.Subscription>();
   const notificationListener = useRef<Notifications.Subscription>();
 
-  // Moved handleNotificationData inside the hook
-  const handleNotificationData = useCallback(async (data: any, source: string) => {
-    console.log(`[${source}] Raw notification data received:`, JSON.stringify(data, null, 2));
+  // Refactored handleNotificationData
+  const handleNotificationData = useCallback(async (rawData: any, source: string) => {
+    console.log(`[${source}] Raw notification data received for processing:`, JSON.stringify(rawData, null, 2));
 
-    if (data?.type === 'call') {
-      console.log(`[${source}] Handling incoming call notification data:`, JSON.stringify(data, null, 2));
-      // TODO: Add navigation logic for calls if needed using router
-      // Example: router.push({ pathname: '/callScreen', params: { callInfo: JSON.stringify(data) } });
-    } else if (data?.type === 'message') {
-      console.log(`[${source}] Handling incoming message notification data:`, JSON.stringify(data, null, 2));
-      const sender = data.sender as { id: Id<"users">, name?: string | null, image?: string | null };
-      if (sender && sender.id) {
-        try {
-          const chatRoomId = await getOrCreateChatRoom({ otherUserId: sender.id });
-          if (chatRoomId) {
-             // Use router.push with pathname and params for Expo Router
-            router.push({
-              pathname: '/(tabs)/chatScreen', // Correct path based on file structure
-              params: {
-                chatRoomId: chatRoomId,
-                otherUserName: sender.name ?? 'Unknown User'
-              }
-            });
-          } else {
-            console.error(`[${source}] Failed to get or create chat room for sender ${sender.id}.`);
-          }
-        } catch (error) {
-          console.error(`[${source}] Error initiating chat via notification press:`, error);
-        }
-      } else {
-        console.error(`[${source}] Received message notification data without valid sender info:`, JSON.stringify(data, null, 2));
-      }
-    } else {
-      console.log(`[${source}] Received notification data, but not type 'call' or 'message':`, JSON.stringify(data, null, 2));
+    // Safely cast or validate rawData against the expected NotificationData type
+    const data = rawData as NotificationData; // Basic casting, consider validation
+
+    console.log(`[${source}] Extracted data type for switch: ${data?.type}`);
+
+    switch (data?.type) {
+        case 'message':
+            await handleMessageNotification(data, source, getOrCreateChatRoom, router);
+            break;
+        case 'call':
+            await handleCallNotification(data, source, router);
+            break;
+        case 'event':
+            await handleEventNotification(data, source, router);
+            break;
+        default:
+            console.log(`[${source}] Received notification data of unhandled type '${data?.type}':`, JSON.stringify(data, null, 2));
+            break;
     }
-  }, [router, getOrCreateChatRoom]); // Corrected dependency array
+  }, [router, getOrCreateChatRoom]); // Dependencies remain the same
 
   // --- Helper Functions ---
 
@@ -129,38 +182,28 @@ export function useNotifications() {
       }
 
       const tokenData = await Notifications.getExpoPushTokenAsync({ projectId });
-      // DETAILED LOGGING START
       console.log('Full tokenData received from Expo:', JSON.stringify(tokenData, null, 2));
       console.log('Expo Push Token fetched (data only):', tokenData.data);
 
       // Basic check for token validity
       if (!tokenData.data || !tokenData.data.startsWith('ExponentPushToken[') || tokenData.data.length < 30) { // Check format and minimum length
           console.error('INVALID OR SHORT PUSH TOKEN RECEIVED:', tokenData.data);
-          // Optionally alert the user or prevent storage
           return undefined;
       }
-      // DETAILED LOGGING END
 
       // Store the token in Convex
-      const deviceId = `${await Device.modelName ?? 'unknown'}-${await Device.deviceName ?? 'unknown'}`;
-      // DETAILED LOGGING START
+      const deviceId = `${Device.osName ?? 'unknownOS'}-${Device.osVersion ?? 'unknownVer'}-${Device.modelName ?? 'unknownModel'}-${(await Device.getDeviceTypeAsync()) ?? 'unknownType'}`;
       console.log(`Attempting to store token: ${tokenData.data} for deviceId: ${deviceId}`);
-      // DETAILED LOGGING END
+
       await storePushToken({
         token: tokenData.data,
         deviceId: deviceId,
       });
-      // DETAILED LOGGING START
       console.log('Token storage attempted in Convex.');
-      // DETAILED LOGGING END
 
       return tokenData.data;
     } catch (e) {
-      // DETAILED LOGGING START
       console.error('Failed during get/store Expo push token:', e);
-      // DETAILED LOGGING END
-      // Optionally alert the user
-      // alert(`Failed to get push token: ${e}`);
       return undefined;
     }
   }, [storePushToken]);

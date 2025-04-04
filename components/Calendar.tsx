@@ -289,6 +289,9 @@ export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:prop
   const handleDayPress = (day: { dateString: string }) => {
     setSelectedDate(day.dateString);
   };
+  useEffect(() => {
+    setSelectedDate(new Date().toISOString().split('T')[0]);
+  }, []);
 
   const handleCreateEventPress = () => {
     if (!selectedDate) {

@@ -24,6 +24,7 @@ export const VoiceCalls = () => {
   };
 
   const handleRejectOrClose = async () => {
+    console.log("handleRejectOrClose");
     if (!ongoingCall) return;
     try {
       await endCallMutation({ callId: ongoingCall._id });

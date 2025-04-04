@@ -5,6 +5,26 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { Doc } from "./_generated/dataModel";
 
+// Helper function to calculate the next occurrence time
+function calculateNextOccurrence(currentDateTime: number, repeat: "daily" | "weekly" | "monthly"): number {
+  const currentDate = new Date(currentDateTime);
+  switch (repeat) {
+    case "daily":
+      currentDate.setDate(currentDate.getDate() + 1);
+      break;
+    case "weekly":
+      currentDate.setDate(currentDate.getDate() + 7);
+      break;
+    case "monthly":
+      currentDate.setMonth(currentDate.getMonth() + 1);
+      break;
+    default:
+      // Should not happen given the validator, but good practice
+      throw new Error(`Invalid repeat value: ${repeat}`);
+  }
+  return currentDate.getTime();
+}
+
 // Store a push notification token for a user
 export const storePushToken = mutation({
   args: {
@@ -55,31 +75,56 @@ export const storePushToken = mutation({
   },
 });
 
-// Send a push notification to a specific user
+// Send a push notification to a specific user and handle rescheduling for repeating events
 export const sendPushNotification = internalAction({
   args: {
+    eventId: v.id("events"),
     userId: v.id("users"),
     title: v.string(),
     body: v.string(),
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
-    // DETAILED LOGGING START
-    console.log(`sendPushNotification Action: Starting for userId=${args.userId}, title=${args.title}, body=${args.body}, data=${JSON.stringify(args.data)}`);
-    // DETAILED LOGGING END
+    console.log(`sendPushNotification Action: Starting for eventId=${args.eventId}, userId=${args.userId}`);
 
+    // --- Rescheduling Logic ---
+    const event = await ctx.runQuery(internal.events.getEventInternal, { eventId: args.eventId });
+
+    if (event && event.isRepeat && event.repeat) {
+      const now = Date.now();
+      // Calculate the next time based on the *original* dateTime to avoid drift
+      const nextOccurrenceTime = calculateNextOccurrence(event.dateTime, event.repeat);
+
+      // Only schedule if the next occurrence is in the future relative to now
+      // And also check if the event's original dateTime isn't already past the calculated next time (edge case for very frequent repeats)
+      if (nextOccurrenceTime > now && nextOccurrenceTime > event.dateTime) {
+         // Pass the same args to the next scheduled call
+        const nextArgs = { ...args };
+        console.log(`Rescheduling event ${args.eventId} for ${new Date(nextOccurrenceTime).toISOString()}`);
+        await ctx.scheduler.runAt(nextOccurrenceTime, internal.notifications.sendPushNotification, nextArgs);
+      } else {
+          console.log(`Not rescheduling event ${args.eventId}. Next calculated time ${new Date(nextOccurrenceTime).toISOString()} is not in the future or is before original dateTime.`);
+      }
+
+    } else if (!event) {
+        console.warn(`Event ${args.eventId} not found. Cannot determine repeat status or reschedule.`);
+        // Decide if you still want to send the current notification if the event is gone.
+        // If not, you could return early here.
+    }
+    // --- End Rescheduling Logic ---
+
+
+    // --- Send Current Notification Logic ---
     // Get all push tokens for this user
     const pushTokens = await ctx.runQuery(internal.notifications.getUserPushTokens, {
       userId: args.userId,
     });
 
-    // DETAILED LOGGING START
-    console.log(`sendPushNotification Action: Found push tokens: ${JSON.stringify(pushTokens)}`);
-    // DETAILED LOGGING END
+    console.log(`sendPushNotification Action: Found push tokens for userId=${args.userId}: ${JSON.stringify(pushTokens)}`);
 
     if (!pushTokens.length) {
       console.log("sendPushNotification Action: No push tokens found for user", args.userId);
-      return;
+      return; // Exit if no tokens to send to
     }
 
     // Send to Expo push notification service
@@ -92,9 +137,7 @@ export const sendPushNotification = internalAction({
       priority: "high",
     }));
 
-    // DETAILED LOGGING START
     console.log(`sendPushNotification Action: Preparing to send messages payload: ${JSON.stringify(messages, null, 2)}`);
-    // DETAILED LOGGING END
 
     try {
       const response = await fetch("https://exp.host/--/api/v2/push/send", {
@@ -106,26 +149,73 @@ export const sendPushNotification = internalAction({
         body: JSON.stringify(messages),
       });
 
-      // DETAILED LOGGING START
-      const responseText = await response.text(); // Read response body as text first
+      const responseText = await response.text();
       console.log(`sendPushNotification Action: Received response status=${response.status}, body=${responseText}`);
-      // Try parsing as JSON, but handle potential errors if body isn't valid JSON
-      let result;
-      try {
-        result = JSON.parse(responseText);
-        console.log("sendPushNotification Action: Parsed push notification result:", JSON.stringify(result, null, 2));
-      } catch (parseError) {
-        console.error("sendPushNotification Action: Failed to parse response body as JSON", parseError);
-        result = { error: "Failed to parse response", body: responseText };
-      }
-      // DETAILED LOGGING END
+      // Optional: Handle response codes/errors from Expo
+      // ...
 
     } catch (error) {
       console.error("sendPushNotification Action: Error sending push notification:", error);
     }
-    // DETAILED LOGGING START
-    console.log(`sendPushNotification Action: Finished for userId=${args.userId}`);
-    // DETAILED LOGGING END
+    console.log(`sendPushNotification Action: Finished processing for eventId=${args.eventId}, userId=${args.userId}`);
+    // --- End Send Current Notification Logic ---
+  },
+});
+
+// NEW: Internal action specifically for sending generic push notifications (non-event related)
+export const sendGenericPushNotification = internalAction({
+  args: {
+    userId: v.id("users"),
+    title: v.string(),
+    body: v.string(),
+    data: v.optional(v.any()),
+  },
+  handler: async (ctx, args) => {
+    console.log(`sendGenericPushNotification Action: Starting for userId=${args.userId}`);
+
+    // Get all push tokens for this user
+    const pushTokens = await ctx.runQuery(internal.notifications.getUserPushTokens, {
+      userId: args.userId,
+    });
+
+    console.log(`sendGenericPushNotification Action: Found push tokens for userId=${args.userId}: ${JSON.stringify(pushTokens)}`);
+
+    if (!pushTokens.length) {
+      console.log("sendGenericPushNotification Action: No push tokens found for user", args.userId);
+      return; // Exit if no tokens to send to
+    }
+
+    // Send to Expo push notification service
+    const messages = pushTokens.map((pushToken: string) => ({
+      to: pushToken,
+      title: args.title,
+      body: args.body,
+      data: args.data ?? {},
+      sound: "default",
+      priority: "high",
+    }));
+
+    console.log(`sendGenericPushNotification Action: Preparing to send messages payload: ${JSON.stringify(messages, null, 2)}`);
+
+    try {
+      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messages),
+      });
+
+      const responseText = await response.text();
+      console.log(`sendGenericPushNotification Action: Received response status=${response.status}, body=${responseText}`);
+      // Optional: Handle response codes/errors from Expo
+      // ...
+
+    } catch (error) {
+      console.error("sendGenericPushNotification Action: Error sending push notification:", error);
+    }
+    console.log(`sendGenericPushNotification Action: Finished processing for userId=${args.userId}`);
   },
 });
 

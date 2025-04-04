@@ -15,18 +15,22 @@ import { VoiceCalls } from "@/components/VoiceCalls";
 import { useNotifications } from "@/hooks/useNotifications";
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
-  const {
-    permissionsGranted,
-    scheduleLocalNotification,
-    requestPermissions,
-    expoPushToken,
-  } = useNotifications();
 
-  requestPermissions();
+
   const colorScheme = useColorScheme();
 
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/sign-in" />;
+  }
+
+  if (!isLoading && isAuthenticated) {
+    const {
+      permissionsGranted,
+      scheduleLocalNotification,
+      requestPermissions,
+      expoPushToken,
+    } = useNotifications();
+    requestPermissions();
   }
 
   return (
@@ -38,24 +42,6 @@ export default function TabLayout() {
           headerShown: true,
           header: () => (
             <View style={{ height: 0 , position: 'absolute'  }}>
-              {/* <Button
-                title="test Notifications test Notifications test Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notificationstest Notifications"
-                onPress={() =>
-                  scheduleLocalNotification(
-                    {
-                      title: "You've got mail! 📬",
-                      sound: "mySoundFile.wav", // Provide ONLY the base filename
-                    },
-                    {
-                      type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-                      seconds: 2,
-                      channelId: "new_emails",
-
-                    }
-                  )
-                }
-                >
-              </Button> */}
             </View>
           ),
           tabBarButton: HapticTab,

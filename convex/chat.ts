@@ -49,8 +49,8 @@ export const createCall = mutation({
       isReceiverJoined: false,
     });
 
-    // Send push notification to receiver
-    await ctx.scheduler.runAfter(0, internal.notifications.sendPushNotification, {
+    // Send push notification to receiver using the generic sender
+    await ctx.scheduler.runAfter(0, internal.notifications.sendGenericPushNotification, {
       userId: args.receiver_id,
       title: "Incoming Call",
       body: `${caller.name ?? "Someone"} is calling you`,
@@ -248,23 +248,24 @@ export const sendMessage = mutation({
             // time is handled by _creationTime automatically
         });
 
-
-        // Send push notification to the recipient
-        await ctx.scheduler.runAfter(0, internal.notifications.sendPushNotification, {
-          userId: recipientId, // Send to the other user in the chat
-          title: `New message from ${user.name ?? "Someone"}`,
-          body: args.message, // Use the message content as the body
-          data: {
-            type: "message", // Change type to message
-            chatRoomId: args.chatRoom_id,
-            sender: {
-              id: identity,
-              name: user.name ?? "Unknown Sender",
-              image: user.image ?? "",
+        // Send push notification to the recipient using the generic sender
+        await ctx.scheduler.runAfter(0, internal.notifications.sendGenericPushNotification, {
+            userId: recipientId, // Send to the other user in the chat
+            title: `New message from ${user.name ?? "Someone"}`,
+            body: args.message, // Use the message content as the body
+            data: {
+                type: "message", // Identify notification type
+                chatRoomId: args.chatRoom_id, // Include chat room ID
+                sender: { // Optional: Include sender info
+                    id: identity,
+                    name: user.name ?? "",
+                    image: user.image ?? "",
+                },
+                messagePreview: args.message.substring(0, 50), // Optional: Preview
             },
-            messagePreview: args.message.substring(0, 100), // Add a preview
-          },
         });
+
+        return;
     },
 });
 

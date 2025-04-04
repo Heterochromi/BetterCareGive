@@ -1,4 +1,4 @@
-import { mutation, query } from "./_generated/server";
+import { mutation, query, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { Doc, Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
@@ -63,54 +63,21 @@ export const create = mutation({
 
 
     const eventNotificationData =   {
-      userId: userId, // Send to the other user in the chat
+      eventId: eventId,
+      userId: userId,
       title: `Scheduled Event: ${args.title}`,
-      body: `Time for ${args.title}`, // Use the message content as the body
+      body: `Time for ${args.title}`,
       data: {
         type: "event",
-        eventId: eventId,
+        eventId: eventId.toString(),
       },
     }
 
-    if (!args.isRepeat) {
-      await ctx.scheduler.runAt(
-        args.dateTime,
-        internal.notifications.sendPushNotification,
-        eventNotificationData
-      );
-    }
-
-    if (args.isRepeat && args.repeat) { // Ensure repeat is also provided
-      const date = new Date(args.dateTime);
-      const minute = date.getMinutes();
-      const hour = date.getHours();
-      const dayOfMonth = date.getDate();
-      const dayOfWeek = date.getDay(); // 0 = Sunday, 6 = Saturday
-
-      let cronspec: string;
-      switch (args.repeat) {
-        case "daily":
-          cronspec = `${minute} ${hour} * * *`; // Run daily at the specified time
-          break;
-        case "weekly":
-          cronspec = `${minute} ${hour} * * ${dayOfWeek}`; // Run weekly on the specified day and time
-          break;
-        case "monthly":
-          cronspec = `${minute} ${hour} ${dayOfMonth} * *`; // Run monthly on the specified day and time
-          break;
-        default:
-          // Handle unexpected repeat value, maybe throw an error or log a warning
-          console.error(`Invalid repeat value: ${args.repeat}`);
-          // Optionally skip registration or use a default/fallback spec
-          return eventId; // Or handle appropriately
-      }
-      crons.register(
-        ctx,
-        { kind: "cron", cronspec: cronspec },
-        internal.notifications.sendPushNotification,
-        eventNotificationData
-      );
-    }
+    await ctx.scheduler.runAt(
+      args.dateTime,
+      internal.notifications.sendPushNotification,
+      eventNotificationData
+    );
 
     return eventId;
   },
@@ -276,3 +243,12 @@ export const getByDateRange = query({
 // Keep the old getByDate for now but mark as deprecated or remove later
 // Or modify it to calculate start/end internally if needed, though less efficient
 // export const getByDate = ... (old implementation)
+
+// Internal query used by the notification action to fetch event details
+export const getEventInternal = internalQuery({
+  args: { eventId: v.id("events") },
+  returns: v.union(eventObjectValidator, v.null()), // Allow null if event not found
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.eventId);
+  },
+});

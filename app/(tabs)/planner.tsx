@@ -25,23 +25,19 @@ export default function Planner() {
       // Optional: Add cleanup logic if needed when the screen goes out of focus
       return () => {
       };
-    }, [currentUser]) // Dependency array includes currentUser to re-run if user changes
+    }, [currentUser]) 
   );
 
-  // Determine the patientID for the events query
-  // If caregiver, use selectedPatient's ID. If patient, use undefined (query handles fetching own events)
   const patientIdForQuery = 
     currentUser?.role === "caregiver" 
-      ? selectedPatient?._id // Fetch for selected patient if caregiver
-      : undefined;          // Fetch own events if patient (or if caregiver hasn't selected)
+      ? selectedPatient?._id 
+      : undefined;          
 
-  // Fetch events based on the determined patientID.
-  // The query will skip if patientIdForQuery is null/undefined when caregiver hasn't selected yet.
   const allEvents = useQuery(
     api.events.list,
     currentUser?.role === 'caregiver' 
-      ? (patientIdForQuery ? { patientID: patientIdForQuery } : "skip") // Skip if caregiver hasn't selected
-      : {} // Patient fetches own events
+      ? (patientIdForQuery ? { patientID: patientIdForQuery } : "skip") 
+      : {} 
   ) || [];
 
   // Loading state

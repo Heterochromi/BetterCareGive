@@ -19,19 +19,19 @@ export default function TabLayout() {
 
   const colorScheme = useColorScheme();
 
+  const {
+    permissionsGranted,
+    scheduleLocalNotification,
+    requestPermissions,
+    expoPushToken,
+  } = useNotifications();
+  requestPermissions();
+
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/sign-in" />;
   }
-
-  if (!isLoading && isAuthenticated) {
-    const {
-      permissionsGranted,
-      scheduleLocalNotification,
-      requestPermissions,
-      expoPushToken,
-    } = useNotifications();
-    requestPermissions();
-  }
+  
+ 
 
   return (
     <>

@@ -13,9 +13,10 @@ import { View, Text } from "react-native";
 import { Profile } from "@/components/Profile";
 import { VoiceCalls } from "@/components/VoiceCalls";
 import { useNotifications } from "@/hooks/useNotifications";
+import Seperator from "@/components/Seperator";
+import RootLayout from '../_layout';
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
-
 
   const colorScheme = useColorScheme();
 
@@ -30,8 +31,6 @@ export default function TabLayout() {
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/sign-in" />;
   }
-  
- 
 
   return (
     <>
@@ -39,10 +38,9 @@ export default function TabLayout() {
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
-          headerShown: true,
+          headerShown: false,
           header: () => (
-            <View style={{ height: 0 , position: 'absolute'  }}>
-            </View>
+            <View style={{ height: 0, position: "absolute" }}></View>
           ),
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
@@ -57,15 +55,6 @@ export default function TabLayout() {
         }}
       >
         <Tabs.Screen
-          name="index"
-          options={{
-            title: "Home",
-            tabBarIcon: ({ color }) => (
-              <IconSymbol size={28} name="house.fill" color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="planner"
           options={{
             title: "Planner",
@@ -78,7 +67,11 @@ export default function TabLayout() {
           name="chatScreen"
           options={{
             title: "Chat",
-            tabBarIcon: () => <></>,
+            tabBarButton: () => (
+              <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
+                <Seperator   />
+              </View>
+            ),
           }}
         />
         <Tabs.Screen

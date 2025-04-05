@@ -39,3 +39,6 @@ yarn-error.*
 *.cursor
 *android
 fcm.json
+.env
+venv/
+development.env

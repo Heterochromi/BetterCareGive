@@ -13,7 +13,7 @@ function SignIn() {
     const { isLoading, isAuthenticated } = useConvexAuth();
   
       if (isAuthenticated) {
-        return <Redirect href="/(tabs)" />;
+        return <Redirect href="/(tabs)/planner" />;
       }
   const { signIn } = useAuthActions();
   const handleSignIn = async () => {

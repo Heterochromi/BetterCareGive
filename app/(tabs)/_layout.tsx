@@ -14,7 +14,8 @@ import { Profile } from "@/components/Profile";
 import { VoiceCalls } from "@/components/VoiceCalls";
 import { useNotifications } from "@/hooks/useNotifications";
 import Seperator from "@/components/Seperator";
-import RootLayout from '../_layout';
+import { registerGlobals } from '@livekit/react-native';
+import LIVEKIT from "@/components/LiveKit";
 export default function TabLayout() {
   const { isLoading, isAuthenticated } = useConvexAuth();
 
@@ -27,6 +28,7 @@ export default function TabLayout() {
     expoPushToken,
   } = useNotifications();
   requestPermissions();
+  registerGlobals();
 
   if (!isLoading && !isAuthenticated) {
     return <Redirect href="/sign-in" />;
@@ -35,6 +37,7 @@ export default function TabLayout() {
   return (
     <>
       <VoiceCalls />
+      {/* <LIVEKIT/> */}
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,

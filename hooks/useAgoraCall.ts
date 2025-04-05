@@ -21,10 +21,9 @@ const getPermission = async () => {
   }
 };
 
-// TODO: Replace with your actual App ID, Channel Name, and potentially fetch a token
-const appId = "5f71708ae6d344bba5862e3c531eda84";
-// const token = '<-- Insert token -->'; // Temporary token or fetched token
-const uid = 0; // Local user UID
+
+const appId = process.env.AGORA_APP_ID;
+const uid = 0; 
 
 const useAgoraCall = () => {
   const setJoined = useMutation(api.chat.setUserJoined);

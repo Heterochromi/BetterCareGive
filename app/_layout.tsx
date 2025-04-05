@@ -4,14 +4,14 @@ import {
   ThemeProvider,
 } from "@react-navigation/native";
 import { useFonts } from "expo-font";
-import { Stack, router } from "expo-router";
+import { Stack, router, useSegments, useRouter, Redirect } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import "react-native-reanimated";
 import { useColorScheme } from "@/hooks/useColorScheme";
 import { ConvexAuthProvider } from "@convex-dev/auth/react";
-import { ConvexReactClient } from "convex/react";
+import { ConvexReactClient, useConvexAuth } from "convex/react";
 import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
@@ -45,29 +45,30 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      <ConvexAuthProvider
-        storage={
-          Platform.OS === "android" || Platform.OS === "ios"
-            ? secureStorage
-            : undefined
-        }
-        client={convex}
-      >
-        <RootLayoutNav />
+    <ConvexAuthProvider
+      storage={
+        Platform.OS === "android" || Platform.OS === "ios"
+          ? secureStorage
+          : undefined
+      }
+      client={convex}
+    >
+      <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
+        <InitialLayout />
         <StatusBar style="auto" />
-      </ConvexAuthProvider>
-    </ThemeProvider>
+      </ThemeProvider>
+    </ConvexAuthProvider>
   );
 }
 
-function RootLayoutNav() {
-
+function InitialLayout() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="sign-in" />
+      <Stack.Screen name="sign-in" />
+      <Stack.Screen name="(tabs)"/> 
+      <Stack.Screen name="+not-found" />
     </Stack>
   );
 }
+
 

@@ -42,3 +42,5 @@ fcm.json
 .env
 venv/
 development.env
+.env.local
+.env

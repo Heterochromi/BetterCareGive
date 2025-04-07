@@ -21,8 +21,8 @@ registerGlobals();
 
 // !! Note !!
 // This sample hardcodes a token which expires in 2 hours.
-const wsURL = "wss://bettercaregive-qhj8u1er.livekit.cloud"
-const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3NDM4NjQzNDAsImlzcyI6IkFQSWF1c2c3NVhMRHRnUSIsIm5iZiI6MTc0Mzg1NzE0MCwic3ViIjoicXVpY2tzdGFydCB1c2VyIGRqM2wyeiIsInZpZGVvIjp7ImNhblB1Ymxpc2giOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsInJvb20iOiJxdWlja3N0YXJ0IHJvb20iLCJyb29tSm9pbiI6dHJ1ZX19.hBOaGwfW1rpV9Xkipahse0I21tnAlhn8va_r6dWh7Tw"
+const wsURL = "wss://kitahack-29yca5d0.livekit.cloud"
+const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJuYW1lIjoibXkgbmFtZTAiLCJ2aWRlbyI6eyJyb29tSm9pbiI6dHJ1ZSwicm9vbSI6InRlc3QiLCJjYW5QdWJsaXNoIjp0cnVlLCJjYW5TdWJzY3JpYmUiOnRydWUsImNhblB1Ymxpc2hEYXRhIjp0cnVlfSwic3ViIjoiaWRlbnRpdHkwIiwiaXNzIjoiQVBJSm1ZWGhDeUtveGgzIiwibmJmIjoxNzQzOTYwMDk1LCJleHAiOjE3NDM5ODE2OTV9.-FuqlC77ukIJkj8McIQ9Lw_R_IUydtvgTDcniPLxm0s"
 
 export default function App() {
   // Start the audio session first.
@@ -40,8 +40,8 @@ export default function App() {
   return (
     <LiveKitRoom
       serverUrl={wsURL}
-      token={token}
       connect={true}
+      token={token}
 
       options={{
         // Use screen pixel density to handle screens with differing densities.
@@ -50,7 +50,7 @@ export default function App() {
       audio={true}
       video={false}
     >
-      {/* <RoomView /> */}
+      <RoomView />
     </LiveKitRoom>
   );
 };

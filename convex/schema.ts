@@ -72,6 +72,11 @@ const schema = defineSchema({
     patient_image: v.string(),
     careGiver_image: v.string(),
   }),
+  activeAgentRooms: defineTable({
+    patient_id: v.id("users"),
+    room_name: v.string(),
+    token: v.string(),
+  }).index("by_patient_id", ["patient_id"]),
   messages: defineTable({
     chatRoom_id: v.id("chatRooms"),
     message: v.string(),

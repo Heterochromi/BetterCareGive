@@ -6,9 +6,10 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Button,
 } from "react-native";
 import { useState } from "react";
-import { useMutation, useQuery } from "convex/react";
+import { useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { UserProfileCard } from "@/components/UserProfileCard";
 import { AddPatientForm } from "@/components/AddPatientForm";
@@ -24,6 +25,8 @@ export default function Profile() {
   const profile = useQuery(api.user.getCurrentUser);
 
   const setRole = useMutation(api.user.pickRole);
+
+  const dispatchAgent = useAction(api.dispatcher.createDispatch);
 
   const handleConfirm = async (type: "caregiver" | "patient") => {
     await setRole({ role: type });
@@ -104,6 +107,13 @@ export default function Profile() {
             role={profile.role}
             email={profile.email}
           />
+          <Button title="Asistant" onPress={() => {
+            dispatchAgent({
+              metadata: {
+                role: "patient",
+              }
+            })
+          }}/>
           
           <CaregiverList 
             onCaregiverSelect={(caregiver) => {

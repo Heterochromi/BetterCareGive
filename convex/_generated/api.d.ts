@@ -8,8 +8,10 @@
  * @module
  */
 
+import type * as agentroom from "../agentroom.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
+import type * as dispatcher from "../dispatcher.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";
 import type * as notifications from "../notifications.js";
@@ -30,8 +32,10 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  agentroom: typeof agentroom;
   auth: typeof auth;
   chat: typeof chat;
+  dispatcher: typeof dispatcher;
   events: typeof events;
   http: typeof http;
   notifications: typeof notifications;

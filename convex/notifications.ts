@@ -82,6 +82,7 @@ export const sendPushNotification = internalAction({
     userId: v.id("users"),
     title: v.string(),
     body: v.string(),
+    // Ensure data includes a 'type' field if sound differentiation is needed
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
@@ -127,14 +128,22 @@ export const sendPushNotification = internalAction({
       return; // Exit if no tokens to send to
     }
 
+    // Determine sound and channel based on data.type
+    const notificationType = args.data?.type;
+    const sound = notificationType === 'ring' ? 'ring.wav' : 'urgent.wav';
+    const channelId = notificationType === 'ring' ? 'ringChannel' : 'urgentChannel'; // For Android 8+
+
+    console.log(`sendPushNotification Action: Determined sound='${sound}', channelId='${channelId}' based on type='${notificationType}'`);
+
     // Send to Expo push notification service
     const messages = pushTokens.map((pushToken: string) => ({
       to: pushToken,
       title: args.title,
       body: args.body,
       data: args.data ?? {},
-      sound: "default",
+      sound: sound, // Use determined sound
       priority: "high",
+      channelId: channelId, // Set channelId for Android 8+ targeting
     }));
 
     console.log(`sendPushNotification Action: Preparing to send messages payload: ${JSON.stringify(messages, null, 2)}`);
@@ -168,6 +177,7 @@ export const sendGenericPushNotification = internalAction({
     userId: v.id("users"),
     title: v.string(),
     body: v.string(),
+    // Ensure data includes a 'type' field if sound differentiation is needed
     data: v.optional(v.any()),
   },
   handler: async (ctx, args) => {
@@ -185,14 +195,22 @@ export const sendGenericPushNotification = internalAction({
       return; // Exit if no tokens to send to
     }
 
+    // Determine sound and channel based on data.type
+    const notificationType = args.data?.type;
+    const sound = notificationType === 'ring' ? 'ring.wav' : 'urgent.wav';
+    const channelId = notificationType === 'ring' ? 'ringChannel' : 'urgentChannel'; // For Android 8+
+
+    console.log(`sendGenericPushNotification Action: Determined sound='${sound}', channelId='${channelId}' based on type='${notificationType}'`);
+
     // Send to Expo push notification service
     const messages = pushTokens.map((pushToken: string) => ({
       to: pushToken,
       title: args.title,
       body: args.body,
       data: args.data ?? {},
-      sound: "default",
+      sound: sound, // Use determined sound
       priority: "high",
+      channelId: channelId, // Set channelId for Android 8+ targeting
     }));
 
     console.log(`sendGenericPushNotification Action: Preparing to send messages payload: ${JSON.stringify(messages, null, 2)}`);

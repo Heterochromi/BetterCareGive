@@ -167,11 +167,30 @@ export function useNotifications() {
     // Ensure Android channel is set *before* getting token (required for Android 8+)
     // This is safe to call multiple times, it will no-op if the channel exists with the same settings.
     if (Platform.OS === 'android') {
+      // Default channel (still useful as a fallback)
       await Notifications.setNotificationChannelAsync('default', {
         name: 'default',
         importance: Notifications.AndroidImportance.MAX,
         vibrationPattern: [0, 250, 250, 250],
+        // No custom sound for default, or use a generic one if preferred
       });
+
+      // Ring channel
+      await Notifications.setNotificationChannelAsync('ringChannel', {
+          name: 'Incoming Rings', // User-visible name
+          importance: Notifications.AndroidImportance.MAX,
+          vibrationPattern: [0, 250, 250, 250, 250, 250], // Example distinct pattern
+          sound: 'ring.wav', // Custom sound file
+      });
+
+      // Urgent channel
+      await Notifications.setNotificationChannelAsync('urgentChannel', {
+          name: 'Urgent Alerts', // User-visible name
+          importance: Notifications.AndroidImportance.HIGH,
+          vibrationPattern: [0, 500, 200, 500], // Example distinct pattern
+          sound: 'urgent.wav', // Custom sound file
+      });
+      console.log('Ensured default, ring, and urgent Android notification channels exist.');
     }
 
     try {

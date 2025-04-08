@@ -4,7 +4,7 @@
     "slug": "kitahack",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/betterLogo.png",
     "scheme": "myapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -14,7 +14,7 @@
     "android": {
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/images/betterLogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.anonymous.BetterCareGiveAsistant"
@@ -22,7 +22,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/betterLogo.png"
     },
     "plugins": [
       "@livekit/react-native-expo-plugin",
@@ -31,17 +31,17 @@
       [
         "expo-notifications",
         {
-          "icon": "",
+          "icon": "./assets/images/betterLogo.png",
           "color": "#ffffff",
           "defaultChannel": "default",
-          "sounds": [],
+          "sounds": ["./assets/sounds/ring.wav" , "./assets/sounds/urgent.wav"],
           "enableBackgroundRemoteNotifications": true
         }
       ],
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-icon.png",
+          "image": "./assets/images/betterLogo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"

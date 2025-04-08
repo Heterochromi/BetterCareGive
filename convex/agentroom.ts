@@ -1,6 +1,6 @@
 import { internalMutation, query , mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
-import { Id } from "./_generated/dataModel";
+import { Id, Doc } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const getPatientInfo = internalQuery({
@@ -59,3 +59,32 @@ export const getAgentRoom = query({
     return {token: room?.token ?? ""};
   },
 });
+
+
+export const getPatientSchedule = query({
+  args: {
+    patient_id: v.id("users"),
+    key: v.string()
+  },
+  returns: v.array(v.any()),
+  handler: async (ctx, args): Promise<Doc<"events">[]> => {
+    if (args.key !== process.env.private_convex_key) {
+      throw new Error("Unauthorized");
+    }
+      const now = Date.now();
+
+      const allEvents = await ctx.db
+        .query("events")
+        .filter((q) => q.eq(q.field("patient.id"), args.patient_id))
+        .collect();
+
+      const filteredEvents = allEvents.filter(event =>
+          event.isRepeat === true || event.dateTime >= now
+      );
+
+      return filteredEvents;
+  }
+});
+
+
+

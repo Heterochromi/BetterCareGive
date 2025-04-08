@@ -46,3 +46,11 @@ development.env
 .env1.local
 gemini.json
 vertex.json
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyw
+*.pyz
+google-services.json

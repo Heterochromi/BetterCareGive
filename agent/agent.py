@@ -14,10 +14,10 @@ from livekit.agents import (
 from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import google, turn_detector, silero , cartesia
 from mem0 import AsyncMemoryClient
+from functionCalls import AssistantFnc
 
 load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
-
 mem0 = AsyncMemoryClient()
 
 async def entrypoint(ctx: JobContext):
@@ -29,6 +29,7 @@ async def entrypoint(ctx: JobContext):
     user_attributes = participant.attributes
     my_user_id = user_attributes.get("myUserID")
     patient_name = user_attributes.get("patient_name")
+    fnc_instance = AssistantFnc(user_id=my_user_id)
     initial_ctx = llm.ChatContext().append(
         role="system",
         text=(
@@ -78,6 +79,7 @@ async def entrypoint(ctx: JobContext):
         max_endpointing_delay=5.0,
         chat_ctx=initial_ctx,
         before_llm_cb=_enrich_with_memory,
+        fnc_ctx=fnc_instance,
     )
 
     usage_collector = metrics.UsageCollector()

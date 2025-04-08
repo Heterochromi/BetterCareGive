@@ -44,3 +44,4 @@ development.env
 .env.local
 .env
 .env1.local
+gemini.json

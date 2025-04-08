@@ -25,7 +25,9 @@ import { createAgentRoom } from './agentroom';
 const createToken = async (roomName: string, participantName: string) => {
   const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
     identity: participantName,
-    // Token to expire after 10 minutes
+    attributes: {
+     myUserID: "example-user-id",
+    },
     ttl: '3h',
   });
   at.addGrant({ roomJoin: true, room: roomName });

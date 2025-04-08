@@ -1,10 +1,10 @@
 "use node";
 
 import { v } from "convex/values";
-import { query, action } from "./_generated/server";
+import { query, action, internalQuery } from "./_generated/server";
 import { AgentDispatchClient } from 'livekit-server-sdk';
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { v4 as uuidv4 } from 'uuid';
 import { Id } from "./_generated/dataModel";
 async function createExplicitDispatch(roomName: string, agentName: string , metadata: any) {
@@ -22,11 +22,12 @@ import { AccessToken } from 'livekit-server-sdk';
 import AgentRoom from '../components/AgentRoom';
 import { createAgentRoom } from './agentroom';
 
-const createToken = async (roomName: string, participantName: string , identity: Id<"users">) => {
+const createToken = async (roomName: string, participantName: string , identity: Id<"users"> , patient_name: string) => {
   const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
     identity: participantName,
     attributes: {
      myUserID: identity,
+     patient_name: patient_name
     },
     ttl: '3h',
   });
@@ -34,6 +35,7 @@ const createToken = async (roomName: string, participantName: string , identity:
 
   return await at.toJwt();
 };
+
 
 export const createDispatch = action({
   args: { 
@@ -46,10 +48,14 @@ export const createDispatch = action({
     }
 
     const roomName = uuidv4();
+
+    const patient = await ctx.runQuery(internal.agentroom.getPatientInfo, {
+      patient_id: identity
+    });
   
     const agentName = "Dementia_Bot";
     const dispatch = await createExplicitDispatch(roomName, agentName , args.metadata);
-    const token = await createToken(roomName, agentName , identity);
+    const token = await createToken(roomName, agentName , identity , patient?.name ?? "");
     
     // If you need to store the result in the database, call a mutation
     await ctx.runMutation(internal.agentroom.createAgentRoom, { 

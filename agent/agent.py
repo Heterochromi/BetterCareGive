@@ -21,18 +21,20 @@ logger = logging.getLogger("voice-agent")
 mem0 = AsyncMemoryClient()
 
 async def entrypoint(ctx: JobContext):
-    initial_ctx = llm.ChatContext().append(
-        role="system",
-        text=(
-           'You are a voice assistant desined to help patients with dementia to go on with their daily lives, Your interface with users will be voice, so you should only respond with words and not with any other characters such as *, #, etc.'
-        ),
-    )
+    
 
     logger.info(f"connecting to room {ctx.room.name} with agent name")
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
     participant = await ctx.wait_for_participant()
     user_attributes = participant.attributes
     my_user_id = user_attributes.get("myUserID")
+    patient_name = user_attributes.get("patient_name")
+    initial_ctx = llm.ChatContext().append(
+        role="system",
+        text=(
+           f'You are a voice assistant desined to help patients with dementia to go on with their daily lives, you are talking to Patient name:{patient_name}, Your interface with users will be voice, so you should only respond with words and not with any other characters such as *, #, etc.'
+        ),
+    )
     async def _enrich_with_memory(agent: VoicePipelineAgent, chat_ctx: llm.ChatContext):
         """Add memories and Augment chat context with relevant memories"""
         if not chat_ctx.messages:
@@ -64,11 +66,11 @@ async def entrypoint(ctx: JobContext):
             # Modify chat context with retrieved memories
             chat_ctx.messages[-1] = rag_msg
             chat_ctx.messages.append(user_msg)
-    logger.info(f"starting voice assistant for participant {participant.identity}")
+    logger.info(f"starting voice assistant for participant {participant.identity} with patient name {patient_name}")
 
     agent = VoicePipelineAgent(
         stt=google.STT(),
-        llm=google.LLM(model="gemini-2.0-flash-001"),# Using Gemini 1.5 Flash
+        llm=google.LLM(model="gemini-2.0-flash-001"),
         tts=google.TTS(),
         vad=silero.VAD.load(),
         turn_detector=turn_detector.EOUModel(),
@@ -89,7 +91,7 @@ async def entrypoint(ctx: JobContext):
 
 
     # The agent should be polite and greet the user when it joins :)
-    await agent.say("Hey, how can I help you today?", allow_interruptions=True)
+    await agent.say(f"Hey, how can I help you today? {patient_name}", allow_interruptions=True)
 
 
 async def request_fnc(req: JobRequest):

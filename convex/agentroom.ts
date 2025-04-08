@@ -1,7 +1,19 @@
-import { internalMutation, query , mutation } from "./_generated/server";
+import { internalMutation, query , mutation, internalQuery } from "./_generated/server";
 import { v } from "convex/values";
 import { Id } from "./_generated/dataModel";
 import { getAuthUserId } from "@convex-dev/auth/server";
+
+export const getPatientInfo = internalQuery({
+  args: {
+    patient_id: v.id("users")
+  },
+  handler: async (ctx, args) => {
+    const patient =  await ctx.db.get(args.patient_id);
+    return patient;
+  }
+});
+
+
 
 export const createAgentRoom = internalMutation({
   args: {

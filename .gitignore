@@ -45,3 +45,4 @@ development.env
 .env
 .env1.local
 gemini.json
+vertex.json

@@ -6,7 +6,7 @@ import { AgentDispatchClient } from 'livekit-server-sdk';
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "./_generated/api";
 import { v4 as uuidv4 } from 'uuid';
-
+import { Id } from "./_generated/dataModel";
 async function createExplicitDispatch(roomName: string, agentName: string , metadata: any) {
   const agentDispatchClient = new AgentDispatchClient(process.env.LIVEKIT_URL ?? "", process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET);
 
@@ -22,11 +22,11 @@ import { AccessToken } from 'livekit-server-sdk';
 import AgentRoom from '../components/AgentRoom';
 import { createAgentRoom } from './agentroom';
 
-const createToken = async (roomName: string, participantName: string) => {
+const createToken = async (roomName: string, participantName: string , identity: Id<"users">) => {
   const at = new AccessToken(process.env.LIVEKIT_API_KEY, process.env.LIVEKIT_API_SECRET, {
     identity: participantName,
     attributes: {
-     myUserID: "example-user-id",
+     myUserID: identity,
     },
     ttl: '3h',
   });
@@ -49,7 +49,7 @@ export const createDispatch = action({
   
     const agentName = "Dementia_Bot";
     const dispatch = await createExplicitDispatch(roomName, agentName , args.metadata);
-    const token = await createToken(roomName, agentName);
+    const token = await createToken(roomName, agentName , identity);
     
     // If you need to store the result in the database, call a mutation
     await ctx.runMutation(internal.agentroom.createAgentRoom, { 

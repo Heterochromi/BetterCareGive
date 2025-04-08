@@ -20,7 +20,6 @@ logger = logging.getLogger("voice-agent")
 
 mem0 = AsyncMemoryClient()
 
-
 async def entrypoint(ctx: JobContext):
     initial_ctx = llm.ChatContext().append(
         role="system",
@@ -76,7 +75,7 @@ async def entrypoint(ctx: JobContext):
         min_endpointing_delay=0.5,
         max_endpointing_delay=5.0,
         chat_ctx=initial_ctx,
-        memory_fnc=_enrich_with_memory,
+        before_llm_cb=_enrich_with_memory,
     )
 
     usage_collector = metrics.UsageCollector()

@@ -368,6 +368,7 @@ export const Calendar = ({currentUser ,  createEvent , allEvents , patient}:prop
         title: eventTitle,
         description: eventDescription,
         dateTime: eventTimestamp,
+        userLocalDateAndTime: combinedDateTime.toLocaleString(),
         patient: patientData,
         isSetByCareGiver: eventIsSetByCaregiver,
         careGiver: caregiverData,

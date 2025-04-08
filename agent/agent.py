@@ -1,6 +1,5 @@
 import logging
 
-from dotenv import load_dotenv
 from livekit.agents import (
     AutoSubscribe,
     JobContext,
@@ -15,7 +14,7 @@ from livekit.agents.pipeline import VoicePipelineAgent
 from livekit.plugins import google, turn_detector, silero , cartesia
 from mem0 import AsyncMemoryClient
 from functionCalls import AssistantFnc
-
+from dotenv import load_dotenv
 load_dotenv(dotenv_path=".env.local")
 logger = logging.getLogger("voice-agent")
 mem0 = AsyncMemoryClient()
@@ -74,9 +73,9 @@ async def entrypoint(ctx: JobContext):
         llm=google.LLM(model="gemini-2.0-flash-001"),
         tts=google.TTS(),
         vad=silero.VAD.load(),
-        turn_detector=turn_detector.EOUModel(),
         min_endpointing_delay=0.5,
         max_endpointing_delay=5.0,
+        # turn_detector=turn_detector.EOUModel(),
         chat_ctx=initial_ctx,
         before_llm_cb=_enrich_with_memory,
         fnc_ctx=fnc_instance,

@@ -51,6 +51,7 @@ const schema = defineSchema({
     title: v.string(),
     description: v.string(),
     dateTime: v.number(),
+    userLocalDateAndTime: v.string(),
     patient:v.object({
       id:v.id("users"),
       patient_name: v.string(),

@@ -4,9 +4,16 @@ from livekit.agents import llm
 from convex import ConvexClient
 from dotenv import load_dotenv
 import os
-load_dotenv(dotenv_path=".env.local")
+
+# Get the directory where functionCalls.py resides
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# Construct the path to .env.local relative to the script directory
+dotenv_path = os.path.join(script_dir, ".env.local")
+load_dotenv(dotenv_path=dotenv_path)
+
 private_convex_key = os.getenv("private_convex_key")
 
+print(private_convex_key)
 
 client = ConvexClient(os.getenv("CONVEX_URL"))
 
@@ -42,6 +49,10 @@ class AssistantFnc(llm.FunctionContext):
         """Retrieves the user's current schedule from the database """
         print(f"Getting schedule for user: {self.user_id}") # Example usage
         # Add implementation for getting location here...
+        events = client.query("agentroom:getPatientSchedule", {"patient_id": self.user_id, "key": private_convex_key})
+
+        print(events)
+        return f"schedule in JSON format is {events}"
         pass # Placeholder
 
 # You'll need to provide the user_id when creating the instance now

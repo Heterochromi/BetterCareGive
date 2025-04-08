@@ -60,29 +60,49 @@ export const getAgentRoom = query({
   },
 });
 
-
 export const getPatientSchedule = query({
   args: {
     patient_id: v.id("users"),
     key: v.string()
   },
-  returns: v.array(v.any()),
-  handler: async (ctx, args): Promise<Doc<"events">[]> => {
+  returns: v.array(v.object({
+    title: v.string(),
+    isRepeat: v.boolean(),
+    description: v.optional(v.string()),
+    isSetByCareGiver: v.boolean(),
+    careGiver: v.optional(v.id("users")),
+    userLocalDateAndTime: v.string()
+  })),
+  handler: async (ctx, args) =>{
     if (args.key !== process.env.private_convex_key) {
+      console.log(process.env.private_convex_key)
       throw new Error("Unauthorized");
     }
       const now = Date.now();
+      console.log(now)
 
       const allEvents = await ctx.db
         .query("events")
         .filter((q) => q.eq(q.field("patient.id"), args.patient_id))
         .collect();
 
+      console.log(allEvents)
+
       const filteredEvents = allEvents.filter(event =>
           event.isRepeat === true || event.dateTime >= now
       );
+      console.log(filteredEvents)
 
-      return filteredEvents;
+      const schedule = filteredEvents.map(event => ({
+        title: event.title,
+        isRepeat: event.isRepeat ?? false,
+        description: event.description,
+        isSetByCareGiver: event.isSetByCareGiver ?? false,
+        careGiver: event.careGiver?.id,
+        userLocalDateAndTime: event.userLocalDateAndTime,
+      }));
+
+      return schedule;
   }
 });
 

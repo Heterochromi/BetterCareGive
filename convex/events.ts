@@ -34,6 +34,7 @@ export const create = mutation({
     repeat: v.optional(
       v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly"))
     ),
+    userLocalDateAndTime: v.string(),
   },
   returns: v.id("events"),
   handler: async (ctx, args) => {
@@ -59,6 +60,7 @@ export const create = mutation({
       userId: userId,
       isRepeat: args.isRepeat,
       repeat: args.repeat,
+      userLocalDateAndTime: args.userLocalDateAndTime,
     });
 
 
@@ -98,6 +100,7 @@ const eventObjectValidator = v.object({
   repeat: v.optional(
     v.union(v.literal("daily"), v.literal("weekly"), v.literal("monthly"))
   ),
+  userLocalDateAndTime: v.string(),
 });
 
 export const list = query({

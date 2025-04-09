@@ -71,7 +71,7 @@ async def entrypoint(ctx: JobContext):
     agent = VoicePipelineAgent(
         stt=google.STT(),
         llm=google.LLM(model="gemini-2.0-flash-001"),
-        tts=google.TTS(),
+        tts=cartesia.TTS(),
         vad=silero.VAD.load(),
         min_endpointing_delay=0.5,
         max_endpointing_delay=5.0,

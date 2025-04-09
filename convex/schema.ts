@@ -47,6 +47,16 @@ const schema = defineSchema({
     patient_name: v.string(),
     careGiver_name: v.string(),
   }),
+  helpNotifications: defineTable({
+    patient_id: v.id("users"),
+    patient_name: v.string(),
+    isSetByCareGiver: v.boolean(),
+    careGiver_id: v.optional(v.id("users")),
+    careGiver_name: v.optional(v.string()),
+    is_active: v.boolean(),
+    interval: v.number(),
+    last_notification_time: v.number(),
+  }).index("by_patient_id", ["patient_id"]),
   events: defineTable({
     title: v.string(),
     description: v.string(),

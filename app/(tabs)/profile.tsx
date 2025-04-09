@@ -17,6 +17,7 @@ import { PatientsList } from "@/components/PatientsList";
 import { CareRequestsList } from "@/components/CareRequestsList";
 import { CaregiverList } from '@/components/CaregiverList';
 import { VoiceCalls } from "@/components/VoiceCalls";
+import { HelpNotificationSettings } from '@/components/HelpNotificationSettings';
 
 export default function Profile() {
   const [userType, setUserType] = useState<"caregiver" | "patient" | null>(
@@ -122,6 +123,10 @@ export default function Profile() {
           />
                   
           <CareRequestsList />
+
+          {profile.id && (
+             <HelpNotificationSettings patientId={profile.id} />
+          )}
         </ScrollView>
       </ThemedView>
     );

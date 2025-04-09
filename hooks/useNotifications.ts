@@ -4,7 +4,7 @@ import * as Notifications from 'expo-notifications';
 import * as TaskManager from 'expo-task-manager';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
-import { useMutation } from 'convex/react';
+import { useMutation, useAction } from 'convex/react';
 import { api } from '@/convex/_generated/api';
 import { useRouter, Router } from 'expo-router';
 import { Id } from '@/convex/_generated/dataModel';
@@ -33,7 +33,7 @@ Notifications.setNotificationHandler({
 
 // Define a basic type for notification data
 type NotificationData = {
-  type?: 'call' | 'message' | 'event' | string; // Allow other string types too
+  type?: 'call' | 'message' | 'event' | 'help' | string; // Added 'help' type
   sender?: {
     id: Id<'users'>;
     name?: string | null;
@@ -96,6 +96,33 @@ const handleEventNotification = async (
   // Example: router.push({ pathname: '/eventScreen', params: { eventInfo: JSON.stringify(data) } });
 }
 
+// NEW: Helper function to handle "help" notifications
+const handleHelpNotification = async (
+  data: NotificationData,
+  source: string,
+  dispatchAgent: ReturnType<typeof useAction<typeof api.dispatcher.createDispatch>>, // Add dispatchAgent param
+  router: Router // Keep router if needed later
+) => {
+  console.log(`[${source}] Handling incoming 'help' notification:`, JSON.stringify(data, null, 2));
+  // Trigger the agent dispatch
+  try {
+    console.log(`[${source}] Calling dispatchAgent for help notification.`);
+    await dispatchAgent({
+      metadata: {
+        role: "patient", // Assuming patient role triggered this
+        trigger: "help_notification_tap" // Add context
+      }
+    });
+    console.log(`[${source}] dispatchAgent called successfully.`);
+    // Optionally navigate somewhere after dispatching, e.g., back to profile or a confirmation screen
+    // router.push('/(tabs)/profile');
+  } catch (error) {
+    console.error(`[${source}] Error calling dispatchAgent for help notification:`, error);
+    // Optionally alert the user
+    // alert('Failed to dispatch agent. Please try again.');
+  }
+};
+
 /**
  * A hook to manage push notifications, permissions, and scheduling.
  * Ensures background notification handling is registered.
@@ -105,6 +132,7 @@ export function useNotifications() {
   const [permissionsGranted, setPermissionsGranted] = useState<boolean | null>(null);
   const storePushToken = useMutation(api.notifications.storePushToken);
   const getOrCreateChatRoom = useMutation(api.chat.getOrCreateChatRoom);
+  const dispatchAgent = useAction(api.dispatcher.createDispatch); // Initialize dispatchAgent here
   const router = useRouter();
 
   // Refs for listeners
@@ -130,11 +158,14 @@ export function useNotifications() {
         case 'event':
             await handleEventNotification(data, source, router);
             break;
+        case 'help': // Added case for 'help'
+            await handleHelpNotification(data, source, dispatchAgent, router); // Pass dispatchAgent
+            break;
         default:
             console.log(`[${source}] Received notification data of unhandled type '${data?.type}':`, JSON.stringify(data, null, 2));
             break;
     }
-  }, [router, getOrCreateChatRoom]); // Dependencies remain the same
+  }, [router, getOrCreateChatRoom, dispatchAgent]); // Added dispatchAgent dependency
 
   // --- Helper Functions ---
 
@@ -316,7 +347,7 @@ export function useNotifications() {
        }
       // Note: Background task registration persists across app launches and doesn't need explicit cleanup here usually.
     };
-  }, [registerBackgroundHandler, getPushToken, storePushToken, handleNotificationData]); // Added handleNotificationData dependency
+  }, [registerBackgroundHandler, getPushToken, storePushToken, handleNotificationData]); // handleNotificationData already includes dispatchAgent dependency implicitly
 
 
   // --- Public API of the Hook ---

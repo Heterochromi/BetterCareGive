@@ -34,5 +34,3 @@ class AssistantFnc(llm.FunctionContext):
         return f"schedule in JSON format is {events}"
         pass # Placeholder
 
-# You'll need to provide the user_id when creating the instance now
-# fnc_ctx = AssistantFnc(user_id="some_user_id_from_backend")

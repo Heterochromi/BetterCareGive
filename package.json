@@ -20,8 +20,6 @@
     "@convex-dev/auth": "^0.0.80",
     "@convex-dev/crons": "^0.1.7",
     "@expo/vector-icons": "^14.0.2",
-    "@google-cloud/aiplatform": "^4.1.0",
-    "@google-cloud/storage": "^7.16.0",
     "@livekit/react-native": "^2.6.5",
     "@livekit/react-native-expo-plugin": "^1.0.1",
     "@livekit/react-native-webrtc": "^125.0.9",

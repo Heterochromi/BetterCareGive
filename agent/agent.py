@@ -32,7 +32,7 @@ async def entrypoint(ctx: JobContext):
     initial_ctx = llm.ChatContext().append(
         role="system",
         text=(
-           f'You are a voice assistant desined to help patients with dementia to go on with their daily lives, you are talking to Patient name:{patient_name}, Your interface with users will be voice, so you should only respond with words and not with any other characters such as *, #, etc.'
+           f'You are a voice assistant designed to help patients with dementia to go on with their daily lives, you are talking to Patient name:{patient_name}, you are allowed to talk about whatever the patient wants to talk about,answer any question they ask,Your interface with users will be voice, so you should only respond with words and not with any other characters such as *, #, etc.'
         ),
     )
     async def _enrich_with_memory(agent: VoicePipelineAgent, chat_ctx: llm.ChatContext):

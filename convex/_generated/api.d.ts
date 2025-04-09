@@ -11,7 +11,7 @@
 import type * as agentroom from "../agentroom.js";
 import type * as auth from "../auth.js";
 import type * as chat from "../chat.js";
-import type * as crons from ../crons.jsjs";
+import type * as crons from "../crons.js";
 import type * as dispatcher from "../dispatcher.js";
 import type * as events from "../events.js";
 import type * as http from "../http.js";

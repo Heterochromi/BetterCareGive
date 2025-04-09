@@ -321,13 +321,20 @@ export function useNotifications() {
       // 5. Set up listener for user tapping on a notification while app is running/backgrounded
       responseListener.current = Notifications.addNotificationResponseReceivedListener(response => {
         console.log('[Response Listener] Notification Response Received (App running/background). Full response:', JSON.stringify(response, null, 2));
-        handleNotificationData(response.notification.request.content.data, 'Response Listener'); // Use internal handler
+        handleNotificationData(response.notification.request.content.data, 'Response Listener'); // Keep this call
       });
 
        // 6. Set up listener for receiving notification while app is foregrounded
        notificationListener.current = Notifications.addNotificationReceivedListener(notification => {
          console.log('[Foreground Listener] Notification Received in Foreground. Full notification:', JSON.stringify(notification, null, 2));
-         handleNotificationData(notification.request.content.data, 'Foreground Listener'); // Use internal handler
+         // --- DO NOT call handleNotificationData here for 'help' notifications ---
+         // We only want to act when the user *taps* the notification.
+         // If you needed to handle other types immediately on foreground receipt,
+         // you could add logic here, e.g.:
+         // const dataType = notification.request.content.data?.type;
+         // if (dataType && dataType !== 'help') {
+         //   handleNotificationData(notification.request.content.data, 'Foreground Listener');
+         // }
        });
 
       console.log('Notification setup complete.');

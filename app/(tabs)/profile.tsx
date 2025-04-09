@@ -16,7 +16,6 @@ import { AddPatientForm } from "@/components/AddPatientForm";
 import { PatientsList } from "@/components/PatientsList";
 import { CareRequestsList } from "@/components/CareRequestsList";
 import { CaregiverList } from '@/components/CaregiverList';
-import { VoiceCalls } from "@/components/VoiceCalls";
 import { HelpNotificationSettings } from '@/components/HelpNotificationSettings';
 
 export default function Profile() {
@@ -26,8 +25,6 @@ export default function Profile() {
   const profile = useQuery(api.user.getCurrentUser);
 
   const setRole = useMutation(api.user.pickRole);
-
-  const dispatchAgent = useAction(api.dispatcher.createDispatch);
 
   const handleConfirm = async (type: "caregiver" | "patient") => {
     await setRole({ role: type });
@@ -108,14 +105,7 @@ export default function Profile() {
             role={profile.role}
             email={profile.email}
           />
-          <Button title="Asistant" onPress={() => {
-            dispatchAgent({
-              metadata: {
-                role: "patient",
-              }
-            })
-          }}/>
-          
+      
           <CaregiverList 
             onCaregiverSelect={(caregiver) => {
               console.log('Selected caregiver:', caregiver);

@@ -4,6 +4,8 @@ import { ThemedText } from './ThemedText';
 import { ThemedView } from './ThemedView';
 import Separator from './Seperator';
 import { useAuthActions } from "@convex-dev/auth/react";
+import { api } from '@/convex/_generated/api';
+import { useAction } from 'convex/react';
 type UserProfileCardProps = {
   name?: string;
   image?: string;
@@ -18,6 +20,7 @@ export const UserProfileCard = ({
   email,
 }: UserProfileCardProps) => {
     const { signOut } = useAuthActions();
+    const dispatchAgent = useAction(api.dispatcher.createDispatch);
 
   // Default image if none provided
   const profileImage = image || '  ';
@@ -38,7 +41,22 @@ export const UserProfileCard = ({
               </ThemedText>
             </View>
           )}
+          {role === 'patient' && (
+             <TouchableOpacity
+               style={styles.helpButton}
+               onPress={() => {
+                 dispatchAgent({
+                   metadata: {
+                     role: "patient",
+                   }
+                 })
+               }}
+             >
+               <ThemedText style={styles.helpButtonText}>Ask for Help</ThemedText>
+             </TouchableOpacity>
+          )}
         </View>
+        
       </View>
       
       <Separator />
@@ -102,6 +120,19 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 12,
     fontWeight: '600',
+  },
+  helpButton: {
+    backgroundColor: '#4A90E2',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 8,
+  },
+  helpButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
   infoSection: {
     marginTop: 16,

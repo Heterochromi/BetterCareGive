@@ -74,10 +74,12 @@ export default function Planner() {
     // Show Calendar for Patient or Caregiver (if patient is selected)
     return (
       <>
+            <View style={{marginTop:50}}/>
+
       {currentUser.role === "caregiver" && selectedPatient && (
         <TouchableOpacity 
           onPress={() => setSelectedPatient(null)} 
-          style={{ padding: 10, backgroundColor: '#f0f0f0', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#ccc' }}
+          style={{padding: 10, backgroundColor: '#f0f0f0', alignItems: 'center', borderBottomWidth: 1, borderBottomColor: '#ccc' }}
         >
           <Text style={{ color: '#007AFF' }}>← Back to Patients List</Text>
         </TouchableOpacity>

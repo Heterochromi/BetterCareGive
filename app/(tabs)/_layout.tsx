@@ -41,9 +41,7 @@ export default function TabLayout() {
         screenOptions={{
           tabBarActiveTintColor: Colors[colorScheme ?? "light"].tint,
           headerShown: false,
-          header: () => (
-            <View style={{ height: 0, position: "absolute" }}></View>
-          ),
+
           tabBarButton: HapticTab,
           tabBarBackground: TabBarBackground,
           tabBarHideOnKeyboard: true,

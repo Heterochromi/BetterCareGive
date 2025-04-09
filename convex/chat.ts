@@ -248,6 +248,7 @@ export const sendMessage = mutation({
             // time is handled by _creationTime automatically
         });
 
+
         // Send push notification to the recipient using the generic sender
         await ctx.scheduler.runAfter(0, internal.notifications.sendGenericPushNotification, {
             userId: recipientId, // Send to the other user in the chat

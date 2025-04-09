@@ -15,5 +15,5 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "app.d.ts"
-, "components/modal", "components/modal"  ]
+, "components/modal", "components/modal", "convex/embed-vertex.js"  ]
 }

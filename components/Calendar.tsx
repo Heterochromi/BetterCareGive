@@ -764,7 +764,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: 20,
   },
   repeatSection: {
     flexDirection: 'row',
@@ -817,7 +816,6 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 10,
     padding: 15,
-    marginBottom: 15,
     alignItems: 'flex-start',
     backgroundColor: '#f9f9f9'
   },
